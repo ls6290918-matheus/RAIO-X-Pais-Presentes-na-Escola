@@ -172,6 +172,17 @@ h3{font-size:19px;line-height:1.2;font-weight:900;margin-bottom:9px}
 @media(max-width:390px){.wrap{padding:20px 14px 45px}.opt{padding:13px;font-size:15px}.pricehead{align-items:flex-start}.val{font-size:34px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','9151671744940732');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=9151671744940732&ev=PageView&noscript=1" alt=""></noscript>
 <!-- Utmify: pixel e rastreamento de UTMs -->
 <script>
 window.pixelId = "68c46a0cc92e42d03e29ece4";
@@ -409,8 +420,9 @@ function capture(){
     if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Confira o formato do e-mail ou deixe o campo em branco.";document.getElementById("em").focus();return;}
     if(email&&!consent){err.textContent="Para receber mensagens por e-mail, marque a autorização. Ou deixe o e-mail em branco.";return;}
     state.name=name;state.email=email;state.consent=consent;
+    track("Lead",{content_name:"quiz_pais_presentes"});
     if(email&&consent&&WEBHOOK_URL){
-      try{await fetch(WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nome:name,email,consentimento:true,papel:state.role,idade:state.age,respostas:state.answers})});track("Lead",{content_name:"quiz_pais_presentes"});}
+      try{await fetch(WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nome:name,email,consentimento:true,papel:state.role,idade:state.age,respostas:state.answers})});}
       catch(e){console.warn("Não foi possível enviar o lead ao webhook.",e);}
     }
     result();
