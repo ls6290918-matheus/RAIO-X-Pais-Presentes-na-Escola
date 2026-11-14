@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0F7A3D">
+<title>Raio-X Pais Presentes na Escola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F6F6F2;--card:#fff;--ink:#14231B;--muted:#5E6B63;--green:#0F7A3D;--green-d:#0A5A2C;--green-soft:#E6F3EA;--sun:#F2C200;--sun-soft:#FFF6D6;--line:#E4E6DF;--red:#B3261E;--blue:#1E3A8A}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:16px;line-height:1.5}
+button,input{font:inherit}
+.top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line)}
+.topin{max-width:600px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px}
+.brand{font-weight:900;letter-spacing:1.8px;font-size:13px;color:#3E4A43;display:flex;gap:8px;align-items:center}
+.brand b{color:var(--green)}
+.flag{width:22px;height:14px;border-radius:3px;background:linear-gradient(90deg,var(--green) 0 40%,var(--sun) 40% 70%,#1E3A8A 70%)}
+.back{border:0;background:none;color:var(--ink);font-size:28px;width:34px;cursor:pointer;visibility:hidden}
+.back.show{visibility:visible}
+.pct{font-weight:900;color:var(--green);width:44px;text-align:right;font-size:14px}
+.pbar{height:5px;background:var(--line)}.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--sun));transition:width .35s ease}
+.wrap{max-width:600px;margin:0 auto;padding:24px 18px 60px;min-height:calc(100vh - 65px)}
+.screen{animation:in .28s ease both}@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.chip{display:inline-block;background:var(--green-soft);color:var(--green);font-weight:900;font-size:11px;letter-spacing:1.2px;padding:7px 12px;border-radius:99px;margin-bottom:14px;text-transform:uppercase}
+h1{font-size:clamp(29px,7vw,39px);line-height:1.08;font-weight:900;letter-spacing:-1px;margin-bottom:14px}
+h2{font-size:clamp(25px,6vw,31px);line-height:1.13;font-weight:900;letter-spacing:-.6px;margin-bottom:14px}
+h3{font-size:19px;line-height:1.2;font-weight:900;margin-bottom:9px}
+.hl{color:var(--green)}
+.lead{color:var(--muted);font-size:17px;margin-bottom:20px}
+.small{font-size:13px;color:var(--muted);line-height:1.5}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:18px 0}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;padding:15px 14px;font:inherit;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.04);transition:transform .15s,border-color .15s;min-height:104px}
+.pcard:active,.opt:active{transform:scale(.985)}
+.pcard .ph{font-size:29px;margin-bottom:8px}.pcard .lb{font-size:15px;font-weight:800;line-height:1.25}.pcard.wide{grid-column:1/-1;min-height:74px;display:flex;align-items:center;gap:14px}.pcard.wide .ph{margin:0}
+.opts{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.opt{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:17px;padding:15px 16px;font:inherit;font-weight:700;font-size:16px;color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s,transform .15s;min-height:68px}
+.opt:hover,.pcard:hover{border-color:#9AC9A9}.opt .e{font-size:25px;flex:0 0 31px;text-align:center}.opt .ar{margin-left:auto;color:var(--green);font-size:22px;font-weight:900}
+.btn{display:block;width:100%;border:0;cursor:pointer;background:var(--green);color:#fff;font-weight:900;font-size:17px;padding:17px 18px;border-radius:16px;text-align:center;text-decoration:none;box-shadow:0 8px 20px rgba(15,122,61,.2);margin-top:18px}
+.btn.sun{background:var(--sun);color:#1B2A12;box-shadow:0 8px 20px rgba(242,194,0,.22)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hero{border-radius:22px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#E6F3EA,#FFF6D6);padding:25px 22px}
+.hero-icon{font-size:48px;margin-bottom:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:19px;margin:15px 0;box-shadow:0 4px 14px rgba(0,0,0,.035)}
+.proof{background:#fff;border:1px solid #CFE3D4;border-left:5px solid var(--green);border-radius:18px;padding:18px;margin:18px 0}
+.proof .source{font-size:13px;color:var(--muted);margin-top:12px}
+.proof a{color:var(--green-d);font-weight:800;text-decoration:underline}
+.quote{background:var(--green-soft);border-radius:14px;padding:15px;margin-top:12px;font-size:15px;line-height:1.55}
+.tip{background:var(--sun-soft);border-radius:16px;padding:16px;margin:15px 0;font-size:15px}
+.tip b{display:block;margin-bottom:5px}
+.pill{display:inline-block;background:var(--sun-soft);color:#594600;border-radius:99px;padding:5px 9px;font-size:11px;font-weight:900;letter-spacing:.5px}
+.result-list{display:grid;gap:10px;margin:14px 0}
+.result-item{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.result-item .e{font-size:24px;flex:0 0 30px}.result-item b{display:block;margin-bottom:3px}.result-item span{font-size:14px;color:var(--muted)}
+.certificate{border:2px double #B8962E;background:#FFFEF8;border-radius:12px;padding:20px;text-align:center;margin:16px 0}.certificate .ct{font-family:"Cormorant Garamond",serif;color:#0B3D22;font-size:24px;font-weight:700;line-height:1.1}.certificate .cn{font-family:"Cormorant Garamond",serif;color:var(--blue);font-size:27px;margin:8px 0;border-bottom:1px solid #D8C68F;padding-bottom:6px}.certificate .cs{font-size:11px;letter-spacing:1.5px;color:#8A6D1D;margin:5px 0 10px}
+.formrow{margin:14px 0}.formrow label{display:block;font-weight:800;margin-bottom:7px}.formrow input{width:100%;padding:15px;border:2px solid var(--line);border-radius:14px;font-size:16px;background:#fff;outline:none}.formrow input:focus{border-color:var(--green)}
+.ck{display:flex;gap:10px;align-items:flex-start;color:var(--muted);font-size:13px;margin-top:12px}.ck input{width:20px;height:20px;flex:0 0 20px;accent-color:var(--green);margin-top:2px}
+.err{color:var(--red);font-size:13px;margin-top:6px;min-height:18px}
+.pricebox{border:2px solid var(--green);border-radius:20px;overflow:hidden;background:#fff;margin:20px 0}
+.pricebox .hd{background:var(--green);color:#fff;text-align:center;font-weight:900;letter-spacing:1.3px;padding:11px}
+.pricebox .bd{padding:18px}.pricehead{display:flex;justify-content:space-between;align-items:center;gap:12px}.val{font-size:40px;font-weight:900;color:var(--green-d);white-space:nowrap}.val small{font-size:17px}
+.items{display:grid;gap:9px;margin:15px 0}.it{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px}.it .e{font-size:25px;flex:0 0 30px}.it b{display:block;font-size:15px}.it span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:12px;color:var(--muted);font-weight:700;margin-top:15px}.trust span{display:block;font-size:22px;margin-bottom:3px}
+.faq details{border-top:1px solid var(--line);padding:13px 0}.faq summary{font-weight:800;cursor:pointer;list-style:none}.faq summary::after{content:"+";float:right;color:var(--green)}.faq details[open] summary::after{content:"–"}.faq p{color:var(--muted);margin-top:8px;font-size:14px}
+.person{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.person .ph{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.person .av{flex:0 0 46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#fff;font-size:16px}
+.person .nm{font-weight:900;font-size:17px;line-height:1.2}.person .rl{font-size:13px;color:var(--muted)}
+.person .lb{font-size:11px;font-weight:900;letter-spacing:1px;color:var(--green);text-transform:uppercase;margin:10px 0 4px}
+.person ul{padding-left:18px;font-size:15px}.person li{margin-bottom:6px}
+.person .says{background:var(--green-soft);border-radius:12px;padding:11px 13px;font-size:14.5px}
+.person figure{margin:12px 0 4px}.person figure img{width:100%;border-radius:12px;display:block}.person figcaption{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.45}.person figcaption b{color:var(--ink)}
+.person .src{font-size:12.5px;color:var(--muted);margin-top:10px}.person .src a{color:var(--green-d);font-weight:700}
+.realhoax{position:relative;margin:16px 0;border-radius:16px;overflow:hidden;border:3px solid #E53935}
+.realhoax img{display:block;width:100%}
+.realhoax .band{position:absolute;top:12px;left:12px;background:#E53935;color:#fff;font-weight:900;font-size:13px;letter-spacing:1px;padding:7px 11px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.fake{position:relative;border-radius:18px;overflow:hidden;margin:16px 0;background:linear-gradient(180deg,#3a3f3c 0%,#1d201e 55%,#000 100%);aspect-ratio:4/5;max-height:430px}
+.fake .ph{position:absolute;inset:0 0 45% 0;background:repeating-linear-gradient(90deg,#4b524d 0 14px,#555c57 14px 30px);filter:blur(6px);opacity:.7}
+.fake .tx{position:absolute;left:18px;right:18px;bottom:22px;filter:blur(3.5px)}
+.fake .tx i{display:block;height:15px;border-radius:4px;background:#fff;margin-bottom:9px}
+.fake .tx i.r{background:#C62828}
+.fake .stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);border:5px solid #E53935;color:#E53935;background:rgba(255,255,255,.92);font-weight:900;font-size:30px;letter-spacing:3px;padding:8px 18px;border-radius:10px;text-align:center;line-height:1.05;white-space:nowrap}
+.fake .stamp small{display:block;font-size:12px;letter-spacing:1.5px}
+.checks{display:grid;gap:10px;margin:14px 0}
+.checks .c{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px}
+.checks .c .x{flex:0 0 28px;height:28px;border-radius:50%;background:#FDECEA;color:var(--red);font-weight:900;display:grid;place-items:center}
+.checks .c b{display:block}.checks .c span{font-size:14px;color:var(--muted)}
+.side{border-radius:18px;padding:16px;margin:12px 0;border:1px solid var(--line);background:#fff}
+.side h3{display:flex;gap:8px;align-items:center}.side ul{padding-left:18px;font-size:15px}.side li{margin-bottom:7px}
+.side .who{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.side.crit{border-left:5px solid #C2410C}.side.def{border-left:5px solid #1E3A8A}.side.fact{border-left:5px solid var(--green);background:var(--green-soft)}
+.side .src{font-size:12.5px;color:var(--muted);margin-top:8px}.side .src a{color:var(--green-d);font-weight:700}
+.scen{display:inline-block;background:#EEF2FF;color:#1E3A8A;border-radius:99px;padding:5px 10px;font-size:11px;font-weight:900;letter-spacing:.8px;margin-left:6px;vertical-align:middle}
+.steps6{counter-reset:s;list-style:none;display:grid;gap:9px;margin:14px 0}
+.steps6 li{counter-increment:s;display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px;font-size:15px}
+.steps6 li::before{content:counter(s);flex:0 0 28px;height:28px;border-radius:50%;background:var(--green);color:#fff;font-weight:900;display:grid;place-items:center}
+.steps6 li b{display:block}
+.fb{background:#EEF2FF;border-radius:14px;padding:14px;font-size:15px;margin:4px 0 12px}
+.premium{border:2px solid var(--sun);background:linear-gradient(135deg,#FFF9E3,#FFF3C4)}
+.premium .tag{display:inline-block;background:var(--sun);color:#1B2A12;font-size:10.5px;font-weight:900;letter-spacing:1px;padding:3px 8px;border-radius:6px;margin-bottom:4px}
+.meter{max-width:600px;margin:0 auto;padding:8px 16px 10px;display:none}
+.meter.show{display:block}
+.meter .mt{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.3px;margin-bottom:5px}
+.meter .mt b{font-size:15px;color:var(--ink)}
+.meter .tr{position:relative;height:10px;border-radius:99px;background:var(--line);overflow:visible}
+.meter .tr i{display:block;height:100%;border-radius:99px;width:0;transition:width .6s cubic-bezier(.2,.8,.2,1),background .4s}
+.meter .goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.35}
+.plus{position:fixed;z-index:60;font-weight:900;font-size:15px;color:#fff;background:var(--green);padding:3px 9px;border-radius:99px;box-shadow:0 4px 10px rgba(0,0,0,.15);pointer-events:none;animation:plus 1s ease-out forwards}
+.plus.zero{background:#8A948E}
+@keyframes plus{from{opacity:0;transform:translateY(8px)}20%{opacity:1}to{opacity:0;transform:translateY(-30px)}}
+.scorebig{background:#fff;border:2px solid var(--line);border-radius:22px;padding:20px;margin:16px 0}
+.scorebig .num{font-size:52px;font-weight:900;line-height:1}.scorebig .num small{font-size:20px;color:var(--muted)}
+.scorebig .lvl{display:inline-block;font-weight:900;font-size:12px;letter-spacing:.8px;padding:5px 10px;border-radius:99px;margin:8px 0 14px}
+.scorebig .bar{position:relative;height:22px;border-radius:99px;overflow:hidden;background:repeating-linear-gradient(45deg,#FDECEA 0 8px,#F9D9D4 8px 16px)}
+.scorebig .bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;transition:width 1.3s cubic-bezier(.2,.8,.2,1)}
+.scorebig .goal{position:absolute;top:-6px;bottom:-6px;width:3px;background:var(--ink)}
+.scorebig .legend{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:8px;font-weight:700}
+.gap{display:grid;gap:9px;margin-top:14px}
+.gap .g{display:flex;gap:12px;align-items:center;background:var(--bg);border-radius:14px;padding:12px}
+.gap .g .p{flex:0 0 auto;font-weight:900;color:var(--red);font-size:14px;background:#FDECEA;border-radius:99px;padding:4px 9px}
+.gap .g b{display:block;font-size:14.5px}.gap .g span{font-size:13px;color:var(--muted)}
+.lifetime{display:flex;gap:10px;align-items:center;background:var(--green-soft);border:1px dashed var(--green);border-radius:14px;padding:12px 14px;margin:14px 0 4px;font-size:14.5px}
+.lifetime .e{font-size:26px}.lifetime b{display:block;color:var(--green-d)}
+.val .once{display:block;font-size:12px;font-weight:800;color:var(--muted);text-align:right;letter-spacing:.5px}
+.certwrap{container-type:inline-size;margin:14px 0 4px}
+.cert2{aspect-ratio:297/210;background:#FFFFFF;border:1.3cqw solid #009739;padding:.9cqw;box-shadow:0 8px 26px rgba(0,39,118,.14);position:relative;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cert2 .c2in{position:relative;height:100%;border:.55cqw double #C9A227;display:flex;flex-direction:column;align-items:center;text-align:center;padding:3cqw 7cqw 2.2cqw;background:radial-gradient(circle at 50% 42%,rgba(255,223,0,.08),transparent 60%),#FFFFFF;overflow:hidden}
+.cert2 .c2in::before,.cert2 .c2in::after{content:"";position:absolute;width:9cqw;height:9cqw;background:linear-gradient(135deg,#009739 0 33%,#FFDF00 33% 50%,transparent 50%)}
+.cert2 .c2in::before{top:0;left:0}
+.cert2 .c2in::after{bottom:0;right:0;transform:rotate(180deg)}
+.c2top{display:flex;align-items:center;gap:1cqw;font-weight:900;font-size:1.75cqw;letter-spacing:.45cqw;color:#009739}
+.c2top svg{width:3cqw;height:auto;display:block}
+.c2title{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:5.4cqw;line-height:1;color:#002776;margin-top:.9cqw;letter-spacing:.15cqw}
+.c2bar{display:flex;width:22cqw;height:.45cqw;margin:1.3cqw auto 0}.c2bar i{flex:1}
+.c2lbl{font-size:1.5cqw;font-weight:800;letter-spacing:.5cqw;color:#5E6B63;margin-top:2cqw}
+.c2name{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:5.6cqw;line-height:1.05;color:#009739;margin-top:.6cqw;padding:0 3cqw .5cqw;border-bottom:.3cqw solid #C9A227;max-width:100%;overflow-wrap:anywhere}
+.c2txt{font-size:1.72cqw;line-height:1.45;color:#2A332E;max-width:74cqw;margin-top:1.4cqw}
+.c2done{font-weight:900;font-size:1.55cqw;letter-spacing:.4cqw;color:#A88514;margin-top:1.6cqw}
+.c2foot{margin-top:auto;width:100%;display:grid;grid-template-columns:1fr 13cqw 1fr;align-items:end;gap:2cqw}
+.c2foot .l,.c2foot .r{font-size:1.35cqw;color:#2A332E;line-height:1.35;border-top:.18cqw solid #002776;padding-top:.7cqw}
+.c2foot .r b{display:block;color:#002776;font-size:1.45cqw;letter-spacing:.15cqw}
+.c2foot .r i{font-style:italic;color:#5E6B63}
+.c2foot .seal svg{width:13cqw;height:auto;display:block}
+@media print{
+ @page{size:A4 landscape;margin:0}
+ html,body{background:#fff!important}
+ .top,.meter,.foot{display:none!important}
+ .wrap{padding:0!important;max-width:none!important;min-height:0!important}
+ #app>section>*:not(.certwrap){display:none!important}
+ #app>section{animation:none!important}
+ .certwrap{width:296mm;margin:0!important}
+ .cert2{box-shadow:none}
+}
+.foot{font-size:12px;color:var(--muted);text-align:center;margin-top:22px;line-height:1.5}
+.tst{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 4px 14px rgba(0,0,0,.035)}
+.tst .st{color:#E0A100;font-size:15px;letter-spacing:2px;margin-bottom:6px}
+.tst p{font-size:15px;line-height:1.5;margin-bottom:10px}
+.tst .who{display:flex;gap:10px;align-items:center;font-weight:800;font-size:14px}
+.tst .who i{flex:0 0 32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-weight:900;font-size:12px}
+.tst .who small{display:block;font-weight:600;color:var(--green);font-size:11.5px}
+.tsts{display:grid;gap:10px;margin:14px 0}
+.tsth{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:22px}
+.tsth .avg{font-size:13px;font-weight:800;color:var(--muted)}.tsth .avg b{color:#E0A100}
+.carousel{display:flex;gap:11px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 12px;margin:10px 0 4px;-webkit-overflow-scrolling:touch}
+.carousel .tst{flex:0 0 84%;scroll-snap-align:start}
+.swipe{font-size:12px;color:var(--muted);text-align:center;font-weight:700}
+.moret summary{list-style:none;cursor:pointer;text-align:center;font-weight:800;color:var(--green-d);border:2px solid var(--line);border-radius:14px;padding:12px;background:#fff}.moret summary::-webkit-details-marker{display:none}.moret[open] summary{display:none}
+.tst.mini{background:var(--green-soft);border-color:#CFE3D4;margin-top:14px;box-shadow:none}
+@media(max-width:390px){.wrap{padding:20px 14px 45px}.opt{padding:13px;font-size:15px}.pricehead{align-items:flex-start}.val{font-size:34px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <button class="back" id="back" aria-label="Voltar">‹</button>
+    <div class="brand"><img src="img/logo.jpg" alt="Pais Presentes na Escola" style="height:44px;width:auto;display:block"><span style="line-height:1.15">RAIO-X<br><b style="letter-spacing:0;font-size:12.5px;white-space:nowrap">Pais Presentes na Escola</b></span></div>
+    <div class="pct" id="pct"></div>
+  </div>
+  <div class="pbar"><i id="bar"></i></div>
+  <div class="meter" id="meter"><div class="mt"><span>SUA PONTUAÇÃO DE PRESENÇA ESCOLAR</span><b id="mval">0/100</b></div><div class="tr"><i id="mbar"></i><div class="goal" style="left:80%" title="Meta: 80"></div></div></div>
+</header>
+<div class="wrap"><main id="app" aria-live="polite"></main></div>
+<script>
+/* CONFIGURAÇÃO: substitua pelos endereços reais antes de publicar. */
+const CHECKOUT_URL = "https://link.syncpayments.com.br/z8X2U7";
+const WEBHOOK_URL = ""; // Opcional: endpoint seguro do seu CRM/formulário.
+const PRICE = 37.90;
+const PRICE_TXT = "37,90";
+
+const app = document.getElementById("app");
+const back = document.getElementById("back");
+const state = { role:"", age:"", answers:{}, index:0, name:"", email:"", consent:false };
+const questionCount = 10;
+
+function esc(s){return String(s ?? "").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function setProgress(p){document.getElementById("bar").style.width=Math.max(0,Math.min(100,p))+"%";document.getElementById("pct").textContent=p?Math.round(p)+"%":"";}
+function render(html,stage,progress,canBack=true){app.innerHTML=`<section class="screen">${html}</section>`;state.stage=stage;setProgress(progress);back.classList.toggle("show",canBack);window.scrollTo({top:0,behavior:"smooth"});}
+function next(){state.index++;step();}
+function pickMarkup(items,kind){return `<div class="opts">${items.map((o,i)=>`<button class="opt" type="button" data-value="${esc(o[2])}"><span class="e">${o[0]}</span><span>${o[1]}</span><span class="ar">›</span></button>`).join("")}</div>`;}
+
+function intro(){
+  updateMeter(false);
+  render(`<img src="img/logo.jpg" alt="Logo Pais Presentes na Escola" style="display:block;width:170px;height:auto;margin:0 auto 18px;background:#fff;border-radius:24px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.07)">
+    <span class="chip">Teste gratuito · cerca de 4 minutos</span>
+    <h1>Você sabe como participar da <span class="hl">vida escolar</span> do seu filho?</h1>
+    <p class="lead">Responda a algumas perguntas sobre sua rotina, seus direitos e sua relação com a escola. No final, você verá um mapa dos pontos que gostaria de fortalecer.</p>
+    <div class="hero"><div class="hero-icon">🏫</div><h3>Participar vai além de ir às reuniões.</h3><p>Também envolve acompanhar informações, conversar com seu filho, saber a quem procurar e conhecer os canais de participação da escola.</p></div>
+    <h3>Primeiro, quem está respondendo?</h3>
+    <div class="pick">
+      <button class="pcard" data-role="mãe"><div class="ph">👩</div><div class="lb">Sou mãe</div></button>
+      <button class="pcard" data-role="pai"><div class="ph">👨</div><div class="lb">Sou pai</div></button>
+      <button class="pcard" data-role="avó/avô"><div class="ph">👵</div><div class="lb">Sou avó ou avô</div></button>
+      <button class="pcard" data-role="outro responsável"><div class="ph">🤝</div><div class="lb">Sou outro responsável</div></button>
+    </div>
+    <p class="foot">Este é um teste educativo de reflexão. Não é uma avaliação da sua capacidade como responsável nem substitui orientação jurídica.</p>`,"intro",0,false);
+  app.querySelectorAll("[data-role]").forEach(b=>b.onclick=()=>{state.role=b.dataset.role;age();});
+  track("ViewContent",{content_name:"quiz_inicio"});
+}
+function age(){
+  updateMeter(false);
+  render(`<span class="chip">Vamos personalizar</span><h2>Qual é a idade do seu filho ou da criança/adolescente sob seus cuidados?</h2><p class="lead">Se você cuida de mais de um, escolha a faixa etária do mais novo.</p>
+    <div class="pick">
+      ${[["🧸","3 a 5 anos"],["🎒","6 a 10 anos"],["📚","11 a 14 anos"],["🎓","15 anos ou mais"]].map(x=>`<button class="pcard" data-age="${x[1]}"><div class="ph">${x[0]}</div><div class="lb">${x[1]}</div></button>`).join("")}
+    </div>`,"age",3);
+  app.querySelectorAll("[data-age]").forEach(b=>b.onclick=()=>{state.age=b.dataset.age;ready();});
+}
+function ready(){
+  updateMeter(false);
+  render(`<div class="hero"><div class="hero-icon">🧭</div><span class="chip">Antes de começar</span><h2>Este raio-X não mede se você é um bom pai, mãe ou responsável.</h2><p class="lead" style="margin:0">Ele ajuda a identificar o que você já acompanha e o que gostaria de entender melhor: informações da escola, direitos, diálogo, valores familiares e participação.</p></div>
+    <div class="tip"><b>Responda pensando na sua realidade.</b> Não existe resposta perfeita. O objetivo é encontrar caminhos práticos, sem culpa e sem confronto desnecessário com a escola.</div>
+    <button class="btn" id="start">Começar meu raio-X</button>`,"ready",5);
+  document.getElementById("start").onclick=()=>{state.index=0;step();};
+}
+
+const FLOW = [
+ {type:"q",id:"dialogo",section:"Sua rotina",q:"Quando seu filho comenta sobre a escola, o que costuma acontecer?",sub:"Pense nas conversas comuns, no caminho de volta ou na hora de dormir.",o:[["💬","Conversamos sobre o que aconteceu e o que ele aprendeu","conversa"],["👂","Eu escuto, mas nem sempre sei o que perguntar","escuto"],["📱","Fico sabendo mais pelos recados e grupos da escola","recados"],["⏰","A rotina é corrida e nem sempre conseguimos conversar","tempo"]]},
+ {type:"q",id:"cenario_identidade",scenario:true,section:"Situação imaginária",q:"Imagine que seu filho, um dia, diz que gostaria de ser menina (ou, se for uma filha, que gostaria de ser menino). Qual seria sua primeira reação?",sub:"Muitos pais nunca pensaram nisso. Responda com sinceridade: é só um exercício.",o:[["😨","Ficaria assustado(a) e daria uma bronca","bronca"],["🙊","Mudaria de assunto e fingiria que não ouvi","ignora"],["🗨️","Perguntaria com calma o que ele quis dizer","pergunta"],["😶","Não saberia como reagir","perdido"]]},
+ {type:"guide",id:"guia_identidade",title:"Se isso acontecer, o que fazer?",fb:{bronca:"Você contou que ficaria assustado(a) e daria uma bronca. É uma reação comum, mas costuma fazer a criança parar de contar as coisas para os pais, e é aí que eles perdem a influência.",ignora:"Você contou que mudaria de assunto. Dá para entender, mas a criança pode concluir que não pode falar disso em casa e ir procurar respostas em outro lugar.",pergunta:"Você contou que perguntaria com calma. É exatamente o melhor primeiro passo: assim você entende o que está por trás da fala.",perdido:"Você contou que não saberia como reagir. Muitos pais se sentem assim, por isso vale ter um roteiro simples em mente."},steps:[["Mantenha a calma","Não demonstre susto nem dê bronca na hora. A sua reação vai decidir se ele volta a conversar com você."],["Pergunte mais","“O que te fez pensar nisso?”, “Onde você ouviu sobre isso?”, “Como você se sente?”."],["Lembre que muitas vezes é curiosidade","Com crianças pequenas, falas assim costumam ser fase, brincadeira ou algo que ouviram. Não é preciso rotular nem tomar decisões."],["Converse sobre os valores da família","Explique o que a sua família acredita, com carinho, sem humilhar e sem ameaçar."],["Procure ajuda profissional, se precisar","Se a fala se repetir ou vier com sofrimento, procure um pediatra e um psicólogo infantil de confiança."],["Continue sendo a pessoa de confiança","Filho que se sente ouvido em casa procura menos respostas fora. Isso é o que mais protege uma criança."]],fact:"No Brasil, nenhum tratamento médico de transição é permitido para crianças e adolescentes: a Resolução CFM nº 2.427/2025 proíbe bloqueadores de puberdade e hormônios antes dos 18 anos e cirurgias de transição com efeito esterilizante antes dos 21. A resolução é contestada no STF, e uma decisão do ministro Flávio Dino a manteve em vigor até o julgamento final.",links:[{label:"CFM: Resolução 2.427/2025",url:"https://portal.cfm.org.br/noticias/conselho-atualiza-regras-para-aperfeicoar-atendimento-medico-a-pessoas-com-incongruencia-de-genero"},{label:"CFM: STF restabelece vigência",url:"https://portal.cfm.org.br/noticias/stf-restabelece-vigencia-da-resolucao-cfm-que-regulamenta-a-assistencia-medica-a-pessoas-transgenero-no-brasil"},{label:"Afya: o que mudou",url:"https://portal.afya.com.br/saude/cfm-aumenta-idade-minima-para-uso-de-bloqueadores-hormonais"}]},
+ {type:"q",id:"informacao",section:"Informações escolares",q:"Se você quisesse entender o que a escola planejou trabalhar neste período, saberia onde buscar essa informação?",sub:"Pode ser no planejamento pedagógico, em comunicados ou diretamente com a equipe escolar.",o:[["✅","Sim, sei onde procurar","sim"],["🟡","Tenho uma ideia, mas nunca procurei","mais_ou_menos"],["❓","Não sei onde encontrar","nao"],["💭","Nunca tinha pensado nisso","nunca_pensei"]]},
+ {type:"proof",title:"Você pode pedir informações sobre a proposta pedagógica",text:"O Estatuto da Criança e do Adolescente prevê que pais ou responsáveis tenham ciência do processo pedagógico e participem da definição das propostas educacionais. A Lei de Diretrizes e Bases também determina que a escola informe os responsáveis sobre frequência, rendimento e execução da proposta pedagógica.",example:"Olá! Gostaria de saber como posso consultar a proposta pedagógica da escola e acompanhar os conteúdos e objetivos previstos para este período. Poderiam me orientar sobre o canal adequado?",source:"ECA, art. 53, parágrafo único; LDB, art. 12, inciso VII.",links:[{label:"Consultar o ECA no Planalto",url:"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm"},{label:"Consultar a LDB na Câmara dos Deputados",url:"https://www2.camara.leg.br/legin/fed/lei/1996/lei-9394-20-dezembro-1996-362578-normaatualizada-pl.html"}]},
+ {type:"q",id:"acompanhar",section:"O que deseja acompanhar",q:"Qual informação você gostaria de acompanhar com mais clareza?",sub:"Escolha a que faria mais diferença na sua rotina hoje.",o:[["📘","Os conteúdos e objetivos trabalhados em sala","conteudos"],["📊","A frequência, o rendimento e as dificuldades de aprendizagem","rendimento"],["📅","As atividades, os projetos e os comunicados da escola","atividades"],["🧩","Um pouco de tudo, de forma organizada","tudo"]]},
+ {type:"people",title:"Quem é quem nesse debate",intro:"Você vai ver esses três nomes ligados ao tema da educação e gênero. Aqui está, em linguagem simples, o que cada um fez de fato. Quem critica costuma chamar o tema de “ideologia de gênero”; quem defende fala em igualdade de gênero e combate à discriminação.",people:[
+  {ini:"AM",color:"#1E3A8A",name:"Alexandre de Moraes",role:"Ministro do Supremo Tribunal Federal (STF)",did:["2020: foi o relator do caso que derrubou uma lei de Novo Gama (GO) que proibia material com “ideologia de gênero” nas escolas municipais.","2025: votou para derrubar leis parecidas de Tubarão (SC), Petrolina e Garanhuns (PE) e comparou essas leis ao período da Inquisição.","2026: votou contra as leis do Espírito Santo e do Maranhão que permitiam aos pais vetar a participação dos filhos em atividades escolares sobre gênero."],says:"Argumento usado pelo STF: só a União pode definir currículo e conteúdo das escolas, e proibir o tema contraria o dever de combater a discriminação.",links:[{label:"STF, 2020",url:"https://noticias.stf.jus.br/?p=50367"},{label:"Revista Oeste, 2025",url:"https://revistaoeste.com/politica/stf-anula-leis-municipais-que-proibiam-debates-sobre-genero-em-escolas/"},{label:"STF, lei do Maranhão",url:"https://noticias.stf.jus.br/postsnoticias/stf-invalida-lei-do-maranhao-que-permitia-aos-pais-vetar-participacao-dos-filhos-em-aulas-sobre-genero-e-sexualidade/"},{label:"Migalhas, lei do ES",url:"https://www.migalhas.com.br/quentes/455728/stf-invalida-lei-que-permitia-a-pais-impedir-filho-em-aulas-de-genero"}]},
+  {ini:"L",color:"#B3261E",name:"Luiz Inácio Lula da Silva",role:"Presidente da República",did:["Fevereiro de 2026, em Mauá (SP): pediu ao Ministério da Educação que o currículo, da creche à universidade, ensine igualdade entre homens e mulheres.","Março de 2026: o governo incluiu a prevenção à violência contra a mulher nas diretrizes curriculares das escolas."],says:"Como ele descreve: combate à violência contra a mulher, para que os meninos aprendam “que não são melhores que as mulheres”. Ele rejeita o termo “ideologia de gênero”, que atribui aos adversários.",links:[{label:"Jornal de Brasília",url:"https://jornaldebrasilia.com.br/noticias/politica-e-poder/lula-defende-educacao-no-combate-a-violencia-contra-a-mulher-em-maua/"},{label:"Congresso em Foco, mar/2026",url:"https://www.congressoemfoco.com.br/noticia/117643/governo-inclui-combate-a-violencia-contra-mulher-no-curriculo-escolar"},{label:"Correio Braziliense, 2024",url:"https://www.correiobraziliense.com.br/politica/2024/01/amp/6794930-em-conferencia-da-educacao-na-unb-lula-ataca-gestao-de-bolsonaro.html"}]},
+  {ini:"EH",color:"#7A3E9D",name:"Erika Hilton",role:"Deputada federal (PSOL-SP)",did:["Propôs o Programa Transcidadania, de educação e emprego para pessoas trans e travestis (2026).","Propôs reservar 5% das vagas das universidades federais para pessoas trans e travestis.","Não encontramos projeto dela sobre conteúdo de gênero na educação infantil."],says:"Como ela descreve: as escolas não podem ser espaços de exclusão e discriminação.",photo:{src:"img/sancao-abr-2025.jpg",alt:"Erika Hilton, o presidente Lula e a primeira-dama Janja segurando um documento assinado no Palácio do Planalto",cap:"<b>Abril de 2025, Palácio do Planalto:</b> Lula sanciona lei de autoria de Erika Hilton que protege mães em seleções de bolsas acadêmicas. A cerimônia não tratou de escolas nem de gênero na educação. Foto: divulgação."},links:[{label:"Congresso em Foco, fev/2026",url:"https://www.congressoemfoco.com.br/noticia/116341/erika-hilton-propoe-incentivos-a-educacao-para-pessoas-trans"},{label:"CartaCapital",url:"https://www.cartacapital.com.br/?p=358716"},{label:"Tribuna do Planalto",url:"https://tribunadoplanalto.com.br/?p=117268"},{label:"Congresso em Foco: sanção de abr/2025",url:"https://congressoemfoco.com.br/noticia/107975/lula-sanciona-lei-que-protege-maes-em-selecao-de-bolsas-academicas"}]}
+ ],takeaway:"Pelas decisões do STF, hoje uma lei estadual ou municipal não pode dar aos pais o poder de vetar a participação do filho nessas atividades. O que continua garantido é o direito de conhecer a proposta pedagógica da escola (ECA, art. 53) e de conversar com ela. É exatamente esse caminho que a Cartilha Pais Presentes na Escola ensina."},
+ {type:"q",id:"cenario_tema",scenario:true,section:"Situação imaginária",q:"Imagine que seu filho chega em casa e conta que, na escola, falaram sobre um tema de gênero ou sexualidade que vai contra os valores da sua família. Qual seria sua primeira reação?",sub:"É só um exercício. Responda pensando no que você faria de verdade.",o:[["📞","Ligaria na hora para a escola, irritado(a)","impulso"],["👂","Perguntaria mais ao meu filho antes de agir","escuta"],["📄","Pediria à escola o material e o objetivo da atividade","info"],["😶","Não saberia o que fazer","perdido"]]},
+ {type:"debate",title:"O que está em debate sobre gênero nas escolas",intro:"Esse tema divide opiniões no Brasil. Veja, lado a lado, o que defende cada grupo e quais fatos não estão em disputa.",crit:{who:"Movimentos de pais, parlamentares conservadores e grupos religiosos",items:["Abordar gênero e sexualidade na escola, principalmente com crianças pequenas, invade a formação moral que cabe primeiro à família.","As decisões do STF tiraram dos pais a possibilidade de afastar o filho dessas atividades por motivos morais ou religiosos.","Expressões amplas como “igualdade de gênero” podem abrir espaço para conteúdos sobre identidade de gênero sem consulta às famílias."]},def_:{who:"Governo federal, ministros do STF e entidades de educação",items:["O objetivo é combater a violência contra a mulher, o bullying e a discriminação.","Não existe uma disciplina chamada “ideologia de gênero”; o termo é usado pelos críticos.","Currículo e conteúdo são definidos em nível nacional, por isso estados e municípios não podem criar regras próprias de veto."]},facts:{items:["Em 2026, o STF derrubou as leis do Espírito Santo e do Maranhão que permitiam aos pais vetar a participação dos filhos em atividades escolares sobre gênero.","Não há uma matéria obrigatória de “ideologia de gênero” criada pelo governo ou pelo STF; checadores classificaram esse boato como falso.","Os pais continuam com o direito de conhecer a proposta pedagógica da escola e de participar das discussões (ECA, art. 53)."],links:[{label:"STF: lei do Maranhão",url:"https://noticias.stf.jus.br/postsnoticias/stf-invalida-lei-do-maranhao-que-permitia-aos-pais-vetar-participacao-dos-filhos-em-aulas-sobre-genero-e-sexualidade/"},{label:"Aos Fatos, nov/2026",url:"https://www.aosfatos.org/noticias/stf-ideologia-genero-escolas/"},{label:"ECA no Planalto",url:"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm"}]},takeaway:"Seja qual for a sua posição, o caminho que funciona é o mesmo: saber o que a escola ensina, conversar com ela com firmeza e respeito, e usar os canais de participação que a lei garante."},
+ {type:"q",id:"verificacao",section:"Como verificar informações",q:"Quando aparece uma notícia ou vídeo afirmando que determinado conteúdo está sendo ensinado nas escolas, o que você costuma fazer antes de tirar uma conclusão?",sub:"Pense em mensagens encaminhadas, vídeos e publicações nas redes sociais.",o:[["🔎","Procuro a fonte original e confiro a data","fonte"],["🏫","Pergunto à escola ou consulto documentos","escola"],["📲","Leio a mensagem, mas nem sempre verifico a origem","sem_fonte"],["🤔","Fico em dúvida sobre como confirmar a informação","duvida"]]},
+ {type:"proof",title:"Um caso real mostra por que é importante conferir a informação",image:{src:"img/post-eduardo-2018.png",alt:"Post de Eduardo Bolsonaro de 31/08/2018 com Jair Bolsonaro mostrando um livro no Jornal Nacional e a foto de outro livro com carimbo de escola",cap:"Reprodução de post publicado em 31/08/2018."},analysis:{title:"O que esse post mostra, e o que a checagem encontrou",points:["O post afirmava que o livro exibido no Jornal Nacional tinha carimbo de escola pública.","O livro com carimbo não é o mesmo: é “Sexo não é bicho-papão”, de Marcos Ribeiro, e não “Aparelho Sexual e Cia”.","O carimbo é da Escola Municipal Major Bonifácio Silveira, em Maceió (AL). A escola confirmou que o livro estava no acervo, mas disse que ele nunca foi usado pela equipe e que o retirou da sala de leitura por considerá-lo inadequado para os alunos."],lesson:"As duas coisas são verdade ao mesmo tempo: o post misturava dois livros diferentes, e um livro considerado inadequado chegou, sim, ao acervo de uma escola. Por isso vale conhecer o que a escola do seu filho oferece e conversar com ela quando algo te preocupar.",links:[{label:"Alagoas 24 Horas: checagem do caso (2018)",url:"https://www.alagoas24horas.com.br/1177621/e-fake-que-livro-citado-por-bolsonaro-no-jn-e-o-que-aparece-com-carimbo-de-escola-de-maceio/"},{label:"Livro “E a verdade os libertará”: resposta da escola",url:"https://www.everand.com/book/471530994/E-a-verdade-os-libertara-Reflexoes-sobre-religiao-politica-e-bolsonarismo"}]},text:"Entre 2010 e 2011, o então deputado Jair Bolsonaro afirmou que crianças de 7 a 10 anos receberiam um material do MEC sobre combate à homofobia e que o conteúdo estimularia a homossexualidade. O projeto Escola sem Homofobia — chamado por opositores de 'kit gay' — ainda estava em avaliação quando sua produção e distribuição foram suspensas em maio de 2011; não houve distribuição oficial nas escolas. Sobre o público-alvo, a cobertura contemporânea baseada em informações do MEC informou que não havia projeto de abordagem da homofobia para crianças de 6 a 10 anos e descreveu a distribuição planejada para escolas de ensino médio. Um estudo acadêmico posterior registra que os materiais também faziam referência a estudantes do 6º ao 9º ano. Por isso, é importante apresentar essa diferença de descrição, em vez de afirmar simplesmente que havia um kit pronto para ser entregue a crianças de 7 a 10 anos.\n\nEm 2018, durante entrevista ao Jornal Nacional, Bolsonaro exibiu o livro Aparelho Sexual e Cia e afirmou que ele fazia parte do chamado 'kit gay' e estaria em bibliotecas de escolas públicas. O MEC informou que não produziu, adquiriu ou distribuiu o livro, e as checagens confirmaram que ele não fazia parte do projeto Escola sem Homofobia. A compra pública de 28 exemplares citada na época foi feita pelo Ministério da Cultura para bibliotecas públicas, não pelo MEC para bibliotecas escolares.",example:"Antes de compartilhar ou concluir que um conteúdo está sendo usado pela escola, confira: quem publicou a informação? Qual é a data? Há documento oficial? O material citado é realmente o original? A escola pode explicar como a atividade foi trabalhada?",source:"Fontes: Câmara dos Deputados (2011); Folha de S.Paulo (2011); estudo acadêmico publicado na Série-Estudos (2019); nota do MEC reproduzida pelo Ministério dos Direitos Humanos (2016); Nova Escola (2018).",links:[{label:"Câmara: declarações de Bolsonaro em 2011",url:"https://www.camara.leg.br/noticias/209583-bolsonaro-quer-evitar-distribuicao-de-kit-anti-homofobia/"},{label:"Câmara: suspensão da produção em maio de 2011",url:"https://www.camara.leg.br/noticias/215309-pressao-de-bancadas-faz-governo-cancelar-kit-sobre-homossexualidade"},{label:"Folha: público previsto e informação do MEC",url:"https://m.folha.uol.com.br/poder/2011/05/920763-kit-gay-era-optativo-e-so-para-escolas-que-lidavam-com-bullying.shtml"},{label:"Estudo acadêmico sobre o projeto",url:"https://educa.fcc.org.br/scielo.php?pid=S2318-19822019000300011&script=sci_arttext"},{label:"MEC: esclarecimento sobre o livro",url:"https://www.gov.br/mdh/pt-br/sdh/noticias/2016/janeiro/a-verdade-sobre-o-livro-de-educacao-sexual-citado-em-video-na-internet"},{label:"Nova Escola: livro e compra para bibliotecas públicas",url:"https://novaescola.org.br/conteudo/12465/livro-exibido-por-bolsonaro-nao-faz-parte-de-kit-gay"}]},
+ {type:"q",id:"valores",section:"Diálogo e valores familiares",q:"Se seu filho contar algo que gere dúvida ou preocupação por envolver os valores da família, como você se sentiria para conversar com a escola?",sub:"A ideia é entender como você se sente diante de uma conversa respeitosa, não presumir que exista um conflito.",o:[["🤝","À vontade para perguntar e ouvir a explicação","confortavel"],["📝","Eu conversaria, mas gostaria de saber como abordar","orientacao"],["😟","Tenho receio de ser mal interpretado(a)","receio"],["🔇","Já tentei conversar e senti que não fui ouvido(a)","nao_ouvido"]]},
+ {type:"proof",title:"Uma conversa pode começar com uma pergunta clara",text:"Você não precisa começar acusando ou concluindo que houve um problema. Primeiro, peça contexto: qual era o objetivo da atividade, como ela foi apresentada e onde pode consultar mais informações.",example:"Olá, tudo bem? Meu filho comentou sobre uma atividade e gostaria de compreender melhor o objetivo pedagógico e a forma como o tema foi trabalhado. Poderiam me explicar ou indicar onde posso consultar essas informações?",source:"Exemplo ilustrativo de comunicação respeitosa. Adapte ao caso concreto e às regras de comunicação da escola."},
+ {type:"q",id:"formalizar",section:"Como se comunicar",q:"Se uma conversa precisar virar uma solicitação por escrito, você saberia como organizar a mensagem?",sub:"Por exemplo: pedir uma informação, registrar uma dúvida ou solicitar uma reunião.",o:[["✍️","Sim, sei explicar o que preciso","sei"],["🧾","Consigo escrever, mas gostaria de um modelo","modelo"],["❓","Não sei como estruturar o pedido","nao_sei"],["⚠️","Tenho receio de escrever de um jeito inadequado","receio_escrever"]]},
+ {type:"q",id:"cenario_professor",scenario:true,section:"Situação imaginária",q:"Imagine que você descobre que um professor está tentando impor as opiniões pessoais dele ao seu filho, ou ridicularizando os valores da sua família em sala. O que você faria?",sub:"É só um exercício. Pense no que você faria de verdade.",o:[["😡","Iria na escola na hora tirar satisfação com o professor","confronto"],["📢","Postaria nas redes para alertar outros pais","expor"],["🗂️","Juntaria informações e pediria uma reunião por escrito","formal"],["😶","Não saberia o que fazer","perdido"]]},
+ {type:"guide",id:"guia_professor",from:"cenario_professor",title:"Se um professor passar dos limites, o que fazer?",fb:{confronto:"Você contou que iria tirar satisfação na hora. A raiva é compreensível, mas um confronto na porta da escola costuma virar a sua palavra contra a dele e enfraquecer o seu caso.",expor:"Você contou que postaria nas redes. Cuidado: se algum detalhe estiver errado, você pode responder por difamação, e a escola tende a se fechar em vez de resolver.",formal:"Você contou que juntaria informações e pediria uma reunião por escrito. É exatamente o caminho que mais funciona.",perdido:"Você contou que não saberia o que fazer. É normal. Por isso vale ter este passo a passo guardado."},steps:[["Entenda o que aconteceu","Pergunte ao seu filho, com calma, o que foi dito, quando e na frente de quem. Use perguntas abertas, sem colocar palavras na boca dele."],["Junte provas","Anote datas e frases, guarde cadernos, atividades e materiais, e pergunte a outros pais se os filhos deles relatam o mesmo."],["Separe as situações","Conteúdo do currículo com o qual você discorda pede diálogo. Professor que impõe opinião, humilha ou pressiona o aluno está abusando da função."],["Peça uma reunião por escrito","Leve os fatos à coordenação e guarde uma cópia do pedido, com data."],["Suba os degraus, se preciso","Direção, depois Secretaria de Educação ou ouvidoria, Conselho Tutelar e Ministério Público."],["Não exponha nem confronte","Nada de discussão na porta da escola nem de nome do professor nas redes. Isso protege você e fortalece o seu caso."]],fact:"Se houver qualquer sinal de abuso, como pedido de segredo, mensagens privadas, contato fora da escola, presentes ou conversa de teor sexual, não espere: procure no mesmo dia o Conselho Tutelar, a polícia ou o Disque 100. O ECA obriga a comunicar ao Conselho Tutelar casos de suspeita de maus-tratos contra crianças e adolescentes (art. 13).",links:[{label:"Estatuto da Criança e do Adolescente (Planalto)",url:"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm"}]},
+ {type:"q",id:"cenario_resposta",scenario:true,section:"Situação imaginária",q:"Agora imagine que você pediu uma reunião para entender uma atividade e a escola demora a responder. O que você faria?",sub:"De novo, é só um exercício para identificar o seu jeito de agir.",o:[["🚪","Desistiria, achando que não adianta","desiste"],["📱","Insistiria por mensagem até alguém responder","insiste"],["🧾","Faria um pedido por escrito, com data, guardando uma cópia","formal"],["🏛️","Procuraria o Conselho Escolar ou a Secretaria de Educação","instancia"]]},
+ {type:"hoax",title:"Recebeu esse print? Veja como checar",intro:"Em novembro de 2026 circulou uma arte dizendo que facções criminosas do Rio (Comando Vermelho e TCP) teriam proibido aulas sobre gênero nas escolas das comunidades. Muita gente compartilhou. Mas será que era verdade?",caption:"Arte que circulou nas redes em novembro de 2026. Checadores não confirmaram a informação. Não compartilhe sem esse contexto.",checks:[["Quem publicou?","A arte não mostra veículo, autor nem data. Sem origem, não dá para saber quem criou."],["Cadê o original?","A frase entre aspas não vem com o comunicado, áudio ou vídeo de onde teria saído."],["A foto prova o fato?","Não. É uma imagem genérica de um jovem numa viela, sem ligação demonstrada com o caso."],["O que dizem os checadores?","O Boatos.org concluiu que não há provas da proibição. Até o site que divulgou a história admitiu que não houve confirmação independente da autoria nem da autenticidade."]],verdict:"Resultado: boato não confirmado. Mesmo quando uma mensagem parece concordar com o que pensamos, vale checar antes de passar adiante.",rule:"Regra de bolso: antes de compartilhar algo sobre escola, pergunte quem publicou, quando, onde está o documento original e se a própria escola ou um órgão oficial confirma.",links:[{label:"Boatos.org: checagem do caso",url:"https://www.boatos.org/brasil/traficantes-do-cv-e-tcp-proibiram-aulas-de-ideologia-de-genero-em-comunidade-do-rio.html"},{label:"Jornal Além Paraíba: sem confirmação independente",url:"https://www.jornalalemparahyba.com.br/2026/11/faccoes-criminosas-ordenam-proibicao-de-ideologia-de-genero-nas-escolas-homem-e-homem-mulher-e-mulher/"}]},
+ {type:"q",id:"participacao",section:"Participação na escola",q:"Além das reuniões, você conhece outras formas de participar da vida escolar?",sub:"A resposta pode variar conforme a rede de ensino e as regras da escola.",o:[["🙋","Sim, conheço reuniões, conselhos ou outros canais","conheco"],["👥","Conheço as reuniões, mas pouco além disso","reunioes"],["🔎","Não sei quais canais existem","nao_conheco"],["📅","Até conheço, mas não consigo participar como gostaria","sem_tempo"]]},
+ {type:"proof",title:"Em escolas públicas, há previsão de participação em Conselhos Escolares",text:"A LDB prevê a participação das comunidades escolar e local em Conselhos Escolares e inclui pais ou responsáveis entre as categorias que compõem esses conselhos. A forma de organização e as regras concretas dependem da legislação do sistema de ensino.",example:"Uma pergunta prática para a escola: 'A unidade possui Conselho Escolar? Como os responsáveis podem conhecer o calendário, as pautas e as formas de participação?'",source:"LDB, art. 14, especialmente inciso II e § 1º. Esta regra trata da gestão democrática do ensino público; não deve ser apresentada como se o funcionamento fosse idêntico em toda escola particular.",links:[{label:"Consultar o texto atualizado da LDB",url:"https://www2.camara.leg.br/legin/fed/lei/1996/lei-9394-20-dezembro-1996-362578-normaatualizada-pl.html"}]},
+ {type:"q",id:"barreira",section:"Sua principal dificuldade",q:"O que mais dificulta sua participação hoje?",sub:"Escolha o obstáculo que mais se aproxima da sua realidade.",o:[["📚","Não conheço bem meus direitos e os canais de informação","direitos"],["💬","Não sei como iniciar certas conversas com a escola","comunicacao"],["🧭","Não sei por onde começar ou qual passo dar primeiro","direcao"],["⏰","Tenho pouco tempo para organizar tudo","tempo"],["🤝","Já tentei participar, mas não senti abertura","abertura"]]},
+ {type:"q",id:"prioridade",section:"O que quer mudar",q:"Se pudesse melhorar uma coisa primeiro, qual escolheria?",sub:"Pense no próximo passo que seria mais útil para sua família.",o:[["🔍","Entender melhor o que a escola planeja e informa","informacao"],["🗣️","Conversar com mais segurança com professores e coordenação","dialogo"],["🧾","Saber registrar dúvidas e solicitações por escrito","registro"],["🏫","Conhecer os canais de participação e como acessá-los","participacao"],["🏡","Ter conversas mais próximas com meu filho sobre a escola","familia"]]},
+ {type:"q",id:"apoio",section:"Seu próximo passo",q:"Que tipo de orientação seria mais útil para você começar?",sub:"Sua resposta ajuda a destacar os materiais mais relacionados ao que procura.",o:[["⚖️","Um guia simples sobre direitos e informações escolares","guia"],["📝","Modelos de mensagens e requerimentos para adaptar","modelos"],["👨‍👩‍👧","Roteiros de conversa com meu filho por faixa etária","roteiros"],["🤝","Orientações para reuniões e participação na escola","participacao"],["📅","Um plano prático para organizar os primeiros passos","plano"]]}
+];
+
+/* ===== PONTUAÇÃO ===== */
+const SCORE={
+ dialogo:{area:"dialogo",pts:{conversa:3,escuto:2,recados:1,tempo:1}},
+ cenario_identidade:{area:"genero",pts:{pergunta:3,perdido:1,ignora:0,bronca:0}},
+ informacao:{area:"info",pts:{sim:3,mais_ou_menos:1,nao:0,nunca_pensei:0}},
+ cenario_tema:{area:"comunicacao",pts:{info:3,escuta:3,impulso:1,perdido:0}},
+ verificacao:{area:"info",pts:{fonte:3,escola:3,sem_fonte:1,duvida:1}},
+ valores:{area:"comunicacao",pts:{confortavel:3,orientacao:2,receio:1,nao_ouvido:1}},
+ formalizar:{area:"comunicacao",pts:{sei:3,modelo:2,receio_escrever:1,nao_sei:0}},
+ cenario_professor:{area:"professor",pts:{formal:3,confronto:1,expor:0,perdido:0}},
+ cenario_resposta:{area:"comunicacao",pts:{formal:3,instancia:3,insiste:1,desiste:0}},
+ participacao:{area:"participacao",pts:{conheco:3,reunioes:1,sem_tempo:1,nao_conheco:0}}
+};
+const AREAS={
+ dialogo:["💬","Diálogo em casa sobre a escola","Módulo: Roteiros de conversa por idade"],
+ genero:["⭐","Conversas difíceis sobre gênero","Bônus Premium: Quando seu filho fala sobre gênero"],
+ info:["📘","Acesso e checagem de informações","Módulo: Direitos e informações escolares"],
+ comunicacao:["📝","Comunicação firme com a escola","Módulo: 5 modelos de mensagens e requerimentos"],
+ professor:["🛡️","Quando um professor passa dos limites","Bônus: E se um professor passar dos limites?"],
+ participacao:["🤝","Participação e voz na escola","Módulo: Participação e voz na escola"]
+};
+const MAXPTS=Object.keys(SCORE).length*3;
+function scoreNow(){let s=0;for(const k in SCORE){const v=state.answers[k];if(v!==undefined)s+=SCORE[k].pts[v]||0}return Math.round(s/MAXPTS*100)}
+function answeredScored(){return Object.keys(SCORE).filter(k=>state.answers[k]!==undefined).length}
+function lvlColor(p){return p<40?"#C62828":p<70?"#E0A100":"#0F7A3D"}
+function lvlName(p){return p<40?"Presença em risco":p<70?"Presença em construção":p<80?"Quase lá":"Presença forte"}
+function updateMeter(show){
+  const m=document.getElementById("meter");
+  if(!show||answeredScored()===0){m.classList.remove("show");return}
+  m.classList.add("show");
+  const p=scoreNow();document.getElementById("mval").textContent=p+"/100";
+  const b=document.getElementById("mbar");b.style.width=p+"%";b.style.background=lvlColor(p);
+}
+function popPoints(n,el){
+  const r=(el||document.getElementById("mval")).getBoundingClientRect();
+  const d=document.createElement("div");d.className="plus"+(n?"":" zero");d.textContent=n?`+${n} pts`:"+0 pts";
+  d.style.left=(r.left-78)+"px";d.style.top=(r.top-2)+"px";document.body.appendChild(d);setTimeout(()=>d.remove(),1000);
+}
+
+function step(){
+  if(state.index>=FLOW.length){capture();return;}
+  updateMeter(true);
+  const f=FLOW[state.index];
+  const progress=7+Math.round((state.index/FLOW.length)*82);
+  if(f.type==="q") renderQuestion(f,progress); else if(f.type==="people") renderPeople(f,progress); else if(f.type==="hoax") renderHoax(f,progress); else if(f.type==="debate") renderDebate(f,progress); else if(f.type==="guide") renderGuide(f,progress); else renderProof(f,progress);
+}
+function renderQuestion(f,progress){
+  render(`<span class="chip">${esc(f.section)} · pergunta ${FLOW.slice(0,state.index+1).filter(x=>x.type==="q").length} de ${FLOW.filter(x=>x.type==="q").length}</span>${f.scenario?'<span class="scen">IMAGINE</span>':""}
+    <h2>${esc(f.q)}</h2><p class="lead">${esc(f.sub||"")}</p>${pickMarkup(f.o)}`,"flow",progress);
+  app.querySelectorAll("[data-value]").forEach(b=>b.onclick=()=>{state.answers[f.id]=b.dataset.value;if(SCORE[f.id]){updateMeter(true);popPoints(SCORE[f.id].pts[b.dataset.value]||0,document.getElementById("mval"));setTimeout(next,450);}else next();});
+}
+function renderProof(f,progress){
+  const links=(f.links||[]).map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ");
+  const proofText=esc(f.text).replace(/\n\n/g,"</p><p>");
+  const img=f.image?`<figure style="margin:16px 0"><img src="${f.image.src}" alt="${esc(f.image.alt)}" loading="lazy" style="width:100%;border-radius:14px;border:1px solid var(--line);display:block"><figcaption class="small" style="margin-top:6px">${esc(f.image.cap)}</figcaption></figure>`:"";
+  const an=f.analysis?`<div class="card"><h3>${esc(f.analysis.title)}</h3><div class="checks">${f.analysis.points.map((p,i)=>`<div class="c"><div class="x" style="background:var(--green-soft);color:var(--green)">${i+1}</div><div><span style="color:var(--ink);font-size:15px">${esc(p)}</span></div></div>`).join("")}</div><div class="tip" style="margin-bottom:6px"><b>Conclusão</b>${esc(f.analysis.lesson)}</div><p class="small">Fontes: ${f.analysis.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">${esc(l.label)}</a>`).join(" · ")}</p></div>`:"";
+  render(`<span class="chip">Informação para levar com você</span><h2>${esc(f.title)}</h2><div class="proof"><p>${proofText}</p><p class="source">${esc(f.source||"")}${links?`<br>${links}`:""}</p></div>${img}${an}
+    <div class="tip"><b>Exemplo prático</b>${esc(f.example)}</div>
+    <p class="small">Os exemplos são modelos ilustrativos. Ajuste o texto à situação real e aos canais adotados pela escola.</p>
+    <button class="btn" id="continue">Continuar</button>`,"flow",progress);
+  document.getElementById("continue").onclick=next;
+}
+
+function renderPeople(f,progress){
+  const cards=f.people.map(p=>`<div class="person"><div class="ph"><div class="av" style="background:${p.color}">${p.ini}</div><div><div class="nm">${esc(p.name)}</div><div class="rl">${esc(p.role)}</div></div></div>
+    <div class="lb">O que fez</div><ul>${p.did.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>
+    ${p.photo?`<figure><img src="${p.photo.src}" alt="${esc(p.photo.alt)}" loading="lazy"><figcaption>${p.photo.cap}</figcaption></figure>`:""}
+    <div class="says">${esc(p.says)}</div>
+    <div class="src">Fontes: ${p.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ")}</div></div>`).join("");
+  render(`<span class="chip">Entenda o debate</span><h2>${esc(f.title)}</h2><p class="lead">${esc(f.intro)}</p>${cards}
+    <div class="tip"><b>O que isso significa para você hoje</b>${esc(f.takeaway)}</div>
+    <p class="small">Resumo informativo com base em decisões e notícias publicadas. Não representa apoio ou oposição a nenhum político ou partido.</p>
+    <button class="btn" id="continue">Continuar</button>`,"flow",progress);
+  document.getElementById("continue").onclick=next;
+}
+
+function renderHoax(f,progress){
+  render(`<span class="chip">Aprenda a checar</span><h2>${esc(f.title)}</h2><p class="lead">${esc(f.intro)}</p>
+    <figure class="realhoax"><img src="img/boato-faccoes-nov-2026.png" alt="Arte que circulou nas redes atribuindo ao Comando Vermelho e ao TCP a proibição de aulas sobre gênero nas escolas das comunidades" loading="lazy"><div class="band">⚠️ BOATO · NÃO CONFIRMADO</div></figure>
+    <p class="small" style="text-align:center;margin-top:-6px">${esc(f.caption)}</p>
+    <h3 style="margin-top:18px">4 perguntas que desmontam esse print</h3>
+    <div class="checks">${f.checks.map((c,i)=>`<div class="c"><div class="x">${i+1}</div><div><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div></div>`).join("")}</div>
+    <div class="proof"><p><b>${esc(f.verdict)}</b></p><p class="source">Fontes: ${f.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ")}</p></div>
+    <div class="tip"><b>Use com qualquer mensagem</b>${esc(f.rule)}</div>
+    <button class="btn" id="continue">Continuar</button>`,"flow",progress);
+  document.getElementById("continue").onclick=next;
+}
+
+function renderDebate(f,progress){
+  const li=a=>a.map(x=>`<li>${esc(x)}</li>`).join("");
+  render(`<span class="chip">Entenda o debate</span><h2>${esc(f.title)}</h2><p class="lead">${esc(f.intro)}</p>
+    <div class="side crit"><h3>🛡️ O que dizem os críticos</h3><div class="who">${esc(f.crit.who)}</div><ul>${li(f.crit.items)}</ul></div>
+    <div class="side def"><h3>📚 O que dizem os defensores</h3><div class="who">${esc(f.def_.who)}</div><ul>${li(f.def_.items)}</ul></div>
+    <div class="side fact"><h3>✅ Fatos que não estão em disputa</h3><ul>${li(f.facts.items)}</ul><div class="src">Fontes: ${f.facts.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ")}</div></div>
+    <div class="tip"><b>O que isso significa para você</b>${esc(f.takeaway)}</div>
+    <button class="btn" id="continue">Continuar</button>`,"flow",progress);
+  document.getElementById("continue").onclick=next;
+}
+
+function renderGuide(f,progress){
+  const fb=f.fb[state.answers[f.from||"cenario_identidade"]]||"";
+  render(`<span class="chip">Roteiro para os pais</span><h2>${esc(f.title)}</h2>${fb?`<div class="fb">${esc(fb)}</div>`:""}
+    <ol class="steps6">${f.steps.map(s=>`<li><div><b>${esc(s[0])}</b>${esc(s[1])}</div></li>`).join("")}</ol>
+    <div class="proof"><p><b>Você sabia?</b> ${esc(f.fact)}</p><p class="source">Fontes: ${f.links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(" · ")}</p></div>
+    <p class="small">Orientação educativa. Não substitui o acompanhamento de pediatra ou psicólogo.</p>
+    <button class="btn" id="continue">Continuar</button>`,"flow",progress);
+  document.getElementById("continue").onclick=next;
+}
+
+function capture(){
+  updateMeter(true);
+  render(`<span class="chip">Seu raio-X está pronto</span><h2>Como seu nome deve aparecer no seu resultado?</h2><p class="lead">Vamos montar um resumo com base nas respostas que você deu.</p>
+    <div class="formrow"><label for="nm">Seu nome</label><input id="nm" type="text" maxlength="60" autocomplete="name" placeholder="Ex.: Maria da Silva"></div>
+    <div class="formrow"><label for="em">E-mail (opcional)</label><input id="em" type="email" autocomplete="email" placeholder="voce@exemplo.com"></div>
+    <label class="ck"><input type="checkbox" id="consent"> Autorizo receber meu resultado e informações sobre a Cartilha Pais Presentes na Escola pelo e-mail informado. Posso cancelar o recebimento.</label>
+    <p class="small">O resultado aparece nesta página mesmo que você não informe e-mail. Se quiser receber mensagens, informe o e-mail e marque a autorização.</p>
+    <div class="err" id="err"></div><button class="btn" id="showresult">Ver meu resultado</button>
+    <p class="foot">Seu nome será usado para personalizar esta tela. O envio e armazenamento de dados dependem da integração do formulário com uma ferramenta segura.</p>`,"capture",91);
+  document.getElementById("showresult").onclick=async()=>{
+    const name=document.getElementById("nm").value.trim().replace(/\s+/g," ");
+    const email=document.getElementById("em").value.trim();
+    const consent=document.getElementById("consent").checked;
+    const err=document.getElementById("err");err.textContent="";
+    if(name.length<2){err.textContent="Digite seu nome para personalizar o resultado.";document.getElementById("nm").focus();return;}
+    if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){err.textContent="Confira o formato do e-mail ou deixe o campo em branco.";document.getElementById("em").focus();return;}
+    if(email&&!consent){err.textContent="Para receber mensagens por e-mail, marque a autorização. Ou deixe o e-mail em branco.";return;}
+    state.name=name;state.email=email;state.consent=consent;
+    if(email&&consent&&WEBHOOK_URL){
+      try{await fetch(WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nome:name,email,consentimento:true,papel:state.role,idade:state.age,respostas:state.answers})});track("Lead",{content_name:"quiz_pais_presentes"});}
+      catch(e){console.warn("Não foi possível enviar o lead ao webhook.",e);}
+    }
+    result();
+  };
+}
+
+function getHighlights(){
+  const a=state.answers;const out=[];
+  if(["sem_fonte","duvida"].includes(a.verificacao))out.push(["🔎","Checagem de informações","Você indicou que nem sempre é simples confirmar a origem de uma notícia sobre a escola. Antes de compartilhar ou tirar conclusões, procure a publicação original, confira a data e, quando necessário, peça esclarecimentos à própria escola."]);
+  else if(["fonte","escola"].includes(a.verificacao))out.push(["🔎","Cuidado com a origem das informações","Você contou que procura fontes ou esclarecimentos antes de concluir. Esse cuidado ajuda a separar documentos, interpretações e mensagens que circulam nas redes."]);
+  if(a.dialogo==="conversa")out.push(["💬","Você já tem um ponto de apoio no diálogo","Você contou que costuma conversar sobre a escola. Esse hábito pode ser fortalecido com perguntas abertas sobre atividades, dúvidas e experiências do dia."]);
+  else if(["escuto","recados","tempo"].includes(a.dialogo))out.push(["💬","Diálogo em casa","Você indicou que gostaria de ter conversas mais organizadas sobre o que acontece na escola. Perguntas abertas e momentos curtos podem ajudar a começar."]);
+  if(["mais_ou_menos","nao","nunca_pensei"].includes(a.informacao)||["conteudos","tudo"].includes(a.acompanhar))out.push(["📘","Acesso às informações","Você demonstrou interesse em entender melhor a proposta pedagógica e o que a escola está desenvolvendo. Um caminho claro para saber a quem pedir informações pode ajudar."]);
+  if(["orientacao","receio","nao_ouvido"].includes(a.valores)||["modelo","nao_sei","receio_escrever"].includes(a.formalizar))out.push(["📝","Comunicação com a escola","Modelos de mensagens podem ajudar a organizar dúvidas e pedidos com clareza e respeito, sem começar uma conversa em tom de confronto."]);
+  if(["reunioes","nao_conheco","sem_tempo"].includes(a.participacao)||a.barreira==="abertura")out.push(["🤝","Participação","Você demonstrou interesse em conhecer melhor os canais disponíveis e como participar de acordo com as regras da sua escola e da rede de ensino."]);
+  if(["impulso","perdido"].includes(a.cenario_tema))out.unshift(["🧭","Diante de um tema sensível",a.cenario_tema==="impulso"?"Na situação imaginária, sua primeira reação seria ligar irritado(a) para a escola. É compreensível, mas uma conversa que começa com perguntas costuma ser mais ouvida. Os roteiros e modelos ajudam a transformar a preocupação em um pedido firme e claro.":"Na situação imaginária, você não saberia o que fazer. Ter um passo a passo pronto (ouvir o filho, pedir o material, conversar com a escola) tira esse peso das suas costas."]);
+  if(["bronca","ignora","perdido"].includes(a.cenario_identidade))out.push(["🏡","Conversas difíceis em casa","Na situação imaginária sobre identidade, você indicou que teria dificuldade de conduzir a conversa. O Bônus Premium “Quando seu filho fala sobre gênero” ajuda a reagir com calma, passar os valores da família e continuar sendo a referência do seu filho."]);
+  if(["confronto","expor","perdido"].includes(a.cenario_professor))out.push(["🛡️","Se um professor passar dos limites","Na situação imaginária, você indicou que reagiria no impulso ou não saberia o que fazer. O guia “E se um professor passar dos limites?” mostra como juntar provas, pedir providências por escrito e a quem recorrer, sem se expor."]);
+  if(["desiste","insiste"].includes(a.cenario_resposta))out.push(["🧾","Quando a escola não responde","Um pedido por escrito, com data e cópia guardada, costuma ter mais força do que mensagens soltas. Se não houver resposta, há instâncias como o Conselho Escolar e a Secretaria de Educação."]);
+  const barriers={direitos:"Você apontou que conhecer melhor seus direitos e os canais de informação é uma dificuldade atual.",comunicacao:"Você apontou que iniciar conversas com a escola é uma dificuldade atual.",direcao:"Você gostaria de ter uma sequência de passos para saber por onde começar.",tempo:"Você precisa de orientações que caibam melhor na rotina disponível.",abertura:"Você relatou que já tentou participar e não sentiu abertura. Pode ser útil organizar o pedido e conhecer os canais formais existentes."};
+  if(barriers[a.barreira])out.push(["🧭","O obstáculo que você identificou",barriers[a.barreira]]);
+  if(!out.length)out.push(["🌱","Organização da participação","Você já reconhece algumas formas de acompanhar a escola. O próximo passo pode ser organizar informações, conversas e participação em uma rotina possível."]);
+  return out.slice(0,7);
+}
+function recommended(){
+  const map={
+    guia:["📘","Guia de direitos e informações escolares","Para entender quais informações pode solicitar e quais normas consultar."],
+    modelos:["📝","Modelos de mensagens e requerimentos","Para organizar perguntas, pedidos de informação e solicitações por escrito."],
+    roteiros:["👨‍👩‍👧","Roteiros de conversa por faixa etária","Para conversar com seu filho sobre a rotina, as atividades e o que ele está aprendendo."],
+    participacao:["🤝","Orientações para reuniões e participação","Para conhecer formas de diálogo e, nas escolas públicas, informações sobre Conselhos Escolares."],
+    plano:["📅","Plano de 7 dias","Para transformar a intenção de participar em pequenos passos organizados."]
+  };
+  return map[state.answers.apoio]||map.plano;
+}
+const TESTIMONIALS={
+ juliana:["Juliana Carvalho Santos","Todo pai e toda mãe deveriam conhecer esse material. Muitas vezes queremos ajudar nossos filhos, mas não sabemos por onde começar."],
+ simone:["Simone Mendes Rocha","Eu tinha muitas dúvidas sobre como agir em determinadas situações com a escola. Gostei da proposta e da facilidade de entender o conteúdo."],
+ maria:["Maria Fernanda Oliveira","Eu não imaginava que existiam tantas coisas que eu poderia fazer para acompanhar melhor a vida escolar do meu filho. Essa cartilha abriu meus olhos!"],
+ carlos:["Carlos Eduardo Martins","Comprei porque queria entender melhor como participar da educação do meu filho. Gostei muito da linguagem simples e das orientações."],
+ fernanda:["Fernanda Rodrigues Lima","Eu sempre achei que a responsabilidade pela educação dentro da escola era praticamente toda dos professores. Hoje vejo como a participação da família é importante."],
+ patricia:["Patrícia Almeida Costa","Material muito importante! Me ajudou a refletir sobre minha participação e sobre como posso estar mais presente na vida escolar dos meus filhos."],
+ marcelo:["Marcelo Henrique Alves","Gostei muito da proposta. É um investimento pequeno perto da importância de conhecer melhor nossos direitos e responsabilidades como pais."],
+ roberto:["Roberto Ferreira Souza","Depois de conhecer o Raio-X, percebi que precisava aprender mais sobre minha participação na escola. A cartilha foi um ótimo próximo passo."],
+ amanda:["Amanda Ribeiro Silva","Uma leitura que todo responsável deveria fazer. Informação é fundamental para acompanhar o desenvolvimento dos nossos filhos."],
+ camila:["Camila Barbosa Nunes","Ser pai e mãe também é estar presente na vida escolar. Recomendo esse material para quem deseja participar mais ativamente da educação dos filhos."],
+ renata:["Renata Cristina Moreira","Eu não tinha ideia de que precisava conhecer melhor meus direitos como mãe dentro da escola. Esse material trouxe informações muito importantes!"],
+ andre:["André Luiz Pereira","Gostei bastante! É um conteúdo que faz a gente pensar sobre o quanto estamos participando da educação dos nossos filhos."],
+ vanessa:["Vanessa Martins Ferreira","Às vezes ficamos sem saber como agir diante de algumas situações escolares. Ter essas informações reunidas em um só lugar ajuda muito."],
+ daniela:["Daniela Souza Ribeiro","Adorei a iniciativa! É muito importante que os pais tenham acesso a informações que ajudem a acompanhar a vida escolar das crianças."],
+ rodrigo:["Rodrigo Alves Carvalho","Material objetivo e fácil de entender. Gostei principalmente da proposta de aproximar mais os pais da escola."],
+ priscila:["Priscila Gomes Nascimento","Como mãe, quero sempre fazer o melhor pelos meus filhos. Conhecer melhor meu papel na escola é uma parte importante disso."],
+ eduardo:["Eduardo Henrique Costa","Uma iniciativa necessária! Muitos pais não sabem exatamente como participar e acompanhar a educação escolar dos filhos."],
+ michele:["Michele Andrade Lopes","Gostei muito do conteúdo. É aquele tipo de informação que deveria chegar a todas as famílias."],
+ fabio:["Fábio Roberto Mendes","Comprei para entender melhor como acompanhar a rotina escolar do meu filho. Achei a proposta muito interessante e relevante."],
+ larissa:["Larissa Monteiro Batista","Educação também começa com a participação da família. Esse material me fez refletir sobre como posso contribuir mais nessa caminhada."]
+};
+const TCOLORS=["#0F7A3D","#1E3A8A","#B3261E","#7A3E9D","#C2410C","#0E7490"];
+function tCard(k,extra=""){const t=TESTIMONIALS[k];const ini=t[0].split(" ").filter(Boolean);const i2=(ini[0][0]+(ini[ini.length-1][0]||"")).toUpperCase();const c=TCOLORS[Object.keys(TESTIMONIALS).indexOf(k)%TCOLORS.length];return `<div class="tst ${extra}"><div class="st" aria-label="5 de 5 estrelas">★★★★★</div><p>“${esc(t[1])}”</p><div class="who"><i style="background:${c}">${i2}</i><div>${esc(t[0])}<small>✓ Avaliação de leitor(a)</small></div></div></div>`;}
+const FLAG_SVG=`<svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="2" fill="#009739"/><path d="M14 2.5 25.5 10 14 17.5 2.5 10Z" fill="#FFDF00"/><circle cx="14" cy="10" r="4.6" fill="#002776"/><path d="M9.6 9.1c3-.9 6.2-.5 8.8 1" stroke="#FFFFFF" stroke-width=".9" fill="none"/></svg>`;
+function sealSVG(){
+  let pts=[];for(let i=0;i<48;i++){const r=i%2?50:56,a=Math.PI*2*i/48;pts.push((60+r*Math.cos(a)).toFixed(1)+","+(60+r*Math.sin(a)).toFixed(1));}
+  return `<svg viewBox="0 0 120 140" aria-label="Selo dourado"><defs><linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6DE7A"/><stop offset=".5" stop-color="#C9A227"/><stop offset="1" stop-color="#8F6E10"/></linearGradient></defs>
+  <path d="M38 96 28 136 44 126 52 140 60 102Z" fill="#009739"/><path d="M82 96 92 136 76 126 68 140 60 102Z" fill="#002776"/>
+  <polygon points="${pts.join(" ")}" fill="url(#gd)"/><circle cx="60" cy="60" r="44" fill="none" stroke="#FFF6C8" stroke-width="1.6"/><circle cx="60" cy="60" r="38" fill="#FFFFFF" stroke="#C9A227" stroke-width="2"/>
+  <rect x="35" y="44" width="50" height="34" rx="3" fill="#009739"/><path d="M60 47.5 81 61 60 74.5 39 61Z" fill="#FFDF00"/><circle cx="60" cy="61" r="8.6" fill="#002776"/><path d="M51.6 59.2c5.6-1.6 11.4-.9 16.6 2.1" stroke="#FFFFFF" stroke-width="1.5" fill="none"/>
+  <text x="60" y="38" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="6.6" font-weight="900" fill="#002776" letter-spacing="1">PAIS PRESENTES</text>
+  <text x="60" y="89" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="6.6" font-weight="900" fill="#002776" letter-spacing="1">NA ESCOLA</text></svg>`;
+}
+function certHTML(name){
+  const d=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  return `<div class="certwrap"><div class="cert2" role="img" aria-label="Certificado de reconhecimento Pais Presentes na Escola em nome de ${esc(name)}"><div class="c2in">
+    <div class="c2top">${FLAG_SVG}CERTIFICADO DE RECONHECIMENTO${FLAG_SVG}</div>
+    <div class="c2title">PAIS PRESENTES NA ESCOLA</div>
+    <div class="c2bar"><i style="background:#009739"></i><i style="background:#FFDF00"></i><i style="background:#002776"></i></div>
+    <div class="c2lbl">CERTIFICAMOS QUE</div>
+    <div class="c2name" style="font-size:${name.length>40?3.6:name.length>28?4.4:5.6}cqw">${esc(name)}</div>
+    <p class="c2txt">Concluiu a jornada educativa Pais Presentes na Escola, demonstrando compromisso com o conhecimento dos direitos dos responsáveis, o acompanhamento da vida escolar dos filhos e o fortalecimento da participação familiar na educação.</p>
+    <p class="c2txt" style="margin-top:.8cqw">Sua participação representa um passo importante na construção de uma educação mais consciente, participativa e colaborativa.</p>
+    <div class="c2done">✦ JORNADA EDUCATIVA CONCLUÍDA ✦</div>
+    <div class="c2foot"><div class="l">Data de emissão:<br><b>${d}</b></div><div class="seal">${sealSVG()}</div><div class="r"><b>PROJETO PAIS PRESENTES NA ESCOLA</b><i>Educação, família e participação: juntos por um futuro melhor.</i></div></div>
+  </div></div></div>`;
+}
+function result(){
+  const highlights=getHighlights();const rec=recommended();
+  const priority={informacao:"acompanhar as informações e a proposta pedagógica",dialogo:"conversar com mais segurança com a escola",registro:"organizar dúvidas e solicitações por escrito",participacao:"conhecer os canais de participação",familia:"aproximar as conversas em família sobre a escola"}[state.answers.prioridade]||"organizar sua participação na vida escolar";
+  const ageText=state.age||"faixa etária do seu filho";
+  const sc=scoreNow(),goal=80,miss=Math.max(0,goal-sc);
+  const lost={};for(const k in SCORE){const v=state.answers[k];if(v===undefined)continue;const l=3-(SCORE[k].pts[v]||0);if(l>0)lost[SCORE[k].area]=(lost[SCORE[k].area]||0)+l}
+  const gaps=Object.entries(lost).sort((a,b)=>b[1]-a[1]).map(([k,l])=>({a:AREAS[k],pts:Math.round(l/MAXPTS*100)}));
+  const scoreBlock=`<div class="scorebig"><span class="pill">SUA PONTUAÇÃO DE PRESENÇA ESCOLAR</span>
+      <div class="num" style="margin-top:10px;color:${lvlColor(sc)}"><span id="snum">0</span><small>/100</small></div>
+      <span class="lvl" style="background:${lvlColor(sc)}22;color:${lvlColor(sc)}">${lvlName(sc).toUpperCase()}</span>
+      <div class="bar"><i id="sbar" style="background:${lvlColor(sc)}"></i><div class="goal" style="left:${goal}%"></div></div>
+      <div class="legend"><span>Você: ${sc}</span><span>Meta: ${goal}</span></div>
+      ${miss>0?`<p style="margin-top:14px;font-weight:800">Faltam <span style="color:var(--red)">${miss} pontos</span> para você chegar à meta. Veja onde você perdeu pontos:</p>
+      <div class="gap">${gaps.map(g=>`<div class="g"><div class="p">−${g.pts}</div><div><b>${g.a[0]} ${esc(g.a[1])}</b><span>Na Cartilha: ${esc(g.a[2])}</span></div></div>`).join("")}</div>
+      <a class="btn sun" href="#offer" id="toOffer">Quero a Cartilha para fechar esses pontos</a>`
+      :`<p style="margin-top:14px;font-weight:800">Você já está acima da meta! ${gaps.length?"Ainda dá para ganhar pontos em:":""}</p>${gaps.length?`<div class="gap">${gaps.map(g=>`<div class="g"><div class="p">−${g.pts}</div><div><b>${g.a[0]} ${esc(g.a[1])}</b><span>Na Cartilha: ${esc(g.a[2])}</span></div></div>`).join("")}</div>`:""}`}
+      <p class="small" style="margin-top:10px">Pontuação educativa, calculada a partir das suas respostas. Não avalia a sua capacidade como responsável.</p></div>`;
+  render(`<span class="chip">Seu resultado personalizado</span><h1>Seu mapa de <span class="hl">participação escolar</span>, ${esc(state.name.split(" ")[0])}</h1>
+    <p class="lead">Pelas suas respostas, seu próximo passo mais importante é ${esc(priority)}.</p>${scoreBlock}
+    <h3 style="margin-top:20px">Você não está sozinho(a) nisso</h3><p class="small">Outros pais e mães também sentiam que queriam ajudar, mas não sabiam por onde começar:</p>
+    <div class="tsts">${tCard("juliana")}${tCard("simone")}${tCard("renata")}</div>
+    <div class="card"><span class="pill">PONTOS QUE VOCÊ PODE FORTALECER</span><div class="result-list">${highlights.map(x=>`<div class="result-item"><div class="e">${x[0]}</div><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join("")}</div>
+      <p class="small">Este mapa é um resumo das respostas que você escolheu, sem comparação com outras famílias.</p>
+    </div>
+    <h3 style="margin-top:22px">🏅 Seu certificado</h3>${certHTML(state.name)}<button class="btn" id="printCert" type="button" style="margin-top:6px">Salvar certificado em PDF / imprimir</button><p class="small" style="text-align:center;margin-top:6px">Na janela de impressão, escolha “Salvar como PDF”. Formato A4 horizontal.</p>
+    <div class="tip"><b>Seu próximo passo sugerido</b>${rec[0]} <strong>${rec[1]}</strong><br>${rec[2]}<br><br>Você pode começar com ações pequenas, considerando a idade do seu filho (${esc(ageText)}) e a rotina da sua família.</div>
+    <h2>Como a Cartilha Pais Presentes na Escola pode ajudar</h2>
+    <p class="lead">A proposta é reunir orientações e modelos para você não precisar começar do zero sempre que surgir uma dúvida.</p>
+    <div class="items">
+      <div class="it"><div class="e">⚖️</div><div><b>Direitos e informações escolares</b><span>Orientações para entender direitos dos responsáveis e saber quais informações buscar.</span></div></div>
+      <div class="it"><div class="e">🧭</div><div><b>Raio-X e acompanhamento da escola</b><span>Um roteiro para organizar o que acompanhar e quais perguntas fazer.</span></div></div>
+      <div class="it"><div class="e">📝</div><div><b>5 modelos de mensagens e requerimentos</b><span>Exemplos editáveis para adaptar a dúvidas, pedidos e solicitações.</span></div></div>
+      <div class="it"><div class="e">👨‍👩‍👧</div><div><b>Roteiros de conversa por idade</b><span>Perguntas para conversar com seu filho sobre a escola, respeitando a faixa etária.</span></div></div>
+      <div class="it"><div class="e">🤝</div><div><b>Participação e voz na escola</b><span>Orientações para reuniões, canais de diálogo e participação coletiva.</span></div></div>
+      <div class="it"><div class="e">🎁</div><div><b>Plano de 7 dias</b><span>Uma sequência de pequenas ações para começar a colocar as orientações em prática.</span></div></div>
+      <div class="it premium"><div class="e">⭐</div><div><span class="tag">BÔNUS PREMIUM</span><b>Capítulo especial: Quando seu filho fala sobre gênero</b><span>O que é comum em cada idade, como reagir nos primeiros minutos, perguntas para entender o que está por trás da fala, como passar os valores da família sem afastar seu filho e quando procurar ajuda.</span></div></div>
+      <div class="it premium"><div class="e">🛡️</div><div><span class="tag">BÔNUS</span><b>Guia: E se um professor passar dos limites?</b><span>Como diferenciar discordância de abuso, juntar provas, pedir providências por escrito e a quem recorrer (escola, Secretaria de Educação, Conselho Tutelar e Ministério Público), com modelos prontos.</span></div></div>
+      <div class="it"><div class="e">👥</div><div><b>Acesso à comunidade privada</b><span>Um espaço exclusivo para trocar experiências com outros pais e responsáveis e tirar dúvidas sobre a vida escolar dos filhos.</span></div></div>
+      <div class="it"><div class="e">🏅</div><div><b>Certificado simbólico personalizado</b><span>Com seu nome, para registrar a conclusão do raio-X. Não é um certificado oficial de formação.</span></div></div>
+    </div>
+    <div class="tsth"><h3 style="margin:0">O que diz quem já leu</h3><span class="avg"><b>★★★★★</b> 5,0 · ${Object.keys(TESTIMONIALS).length} avaliações</span></div>
+    <div class="carousel">${["maria","carlos","vanessa","fernanda","rodrigo","patricia","daniela","michele"].map(k=>tCard(k)).join("")}</div>
+    <p class="swipe">Arraste para o lado para ver mais ›</p>
+    <div class="pricebox" id="offer"><div class="hd">CARTILHA PAIS PRESENTES NA ESCOLA</div><div class="bd">
+      <img src="img/logo.jpg" alt="Logo Pais Presentes na Escola" style="display:block;width:130px;height:auto;margin:0 auto 14px">
+      <div class="pricehead"><div><b>Cartilha completa + plano de 7 dias + comunidade privada</b><p class="small" style="margin-top:4px">⭐ Inclui os bônus “Quando seu filho fala sobre gênero” e “E se um professor passar dos limites?”</p><p class="small">Acesso digital e vitalício a todos os conteúdos.</p></div><div class="val"><small>R$</small> ${PRICE_TXT}<span class="once">PAGAMENTO ÚNICO</span></div></div>
+      <div class="lifetime"><div class="e">♾️</div><div><b>Acesso vitalício, pagamento único</b>Você paga uma vez só, R$ ${PRICE_TXT}, e tem acesso a todos os conteúdos da Cartilha para sempre. Sem mensalidade e sem renovação.</div></div>
+      <a class="btn sun" id="buy" href="${CHECKOUT_URL}" target="_blank" rel="noopener">Quero a cartilha por R$ ${PRICE_TXT}</a>
+      <p class="small" style="text-align:center;margin-top:10px">Pagamento único no Pix ou cartão (parcelamento conforme o checkout) · sem mensalidade</p>
+      ${tCard("marcelo","mini")}
+      <div class="trust"><div><span>♾️</span>Acesso vitalício</div><div><span>🔒</span>Pagamento pelo checkout</div><div><span>↩️</span>30 dias de garantia</div></div>
+    </div></div>
+    <div class="card faq"><h3>Perguntas frequentes</h3>
+      <details><summary>A cartilha vai criar conflito com a escola?</summary><p>O material deve orientar uma comunicação respeitosa e objetiva. Ele não incentiva confronto nem garante que a escola concordará com toda solicitação.</p></details>
+      <details><summary>Serve para escola pública e particular?</summary><p>As garantias do ECA sobre ciência do processo pedagógico se aplicam aos responsáveis por crianças e adolescentes. Já as regras sobre gestão democrática e Conselhos Escolares citadas na LDB tratam do ensino público. O canal e os procedimentos podem variar conforme a rede e a escola.</p></details>
+      <details><summary>A cartilha garante que a escola vai mudar um conteúdo?</summary><p>Não. A cartilha oferece informação, modelos de comunicação e orientação para participar. Não garante mudança de conteúdo, decisão ou procedimento da escola.</p></details>
+      <details><summary>Vou pagar mensalidade?</summary><p>Não. O pagamento é único, de R$ 37,90, e o acesso à Cartilha e a todos os conteúdos é vitalício.</p></details>
+      <details><summary>Como funciona a comunidade privada?</summary><p>Depois da compra, você recebe por e-mail o acesso à comunidade exclusiva de pais e responsáveis, onde pode trocar experiências e tirar dúvidas.</p></details>
+      <details><summary>O material substitui orientação jurídica?</summary><p>Não. É um material educativo. Situações específicas podem exigir orientação de um profissional ou dos órgãos competentes.</p></details>
+      <details><summary>Como funciona a garantia?</summary><p>Você tem 30 dias de garantia. Se não ficar satisfeito(a), pode pedir o reembolso dentro desse prazo, conforme as condições informadas no checkout.</p></details>
+    </div>
+    <h3 style="margin-top:22px">Mais pais e mães que deram o próximo passo</h3>
+    <div class="tsts">${["roberto","amanda","camila"].map(k=>tCard(k)).join("")}</div>
+    <details class="moret"><summary>Ver mais 5 avaliações</summary><div class="tsts">${["fabio","priscila","andre","eduardo","larissa"].map(k=>tCard(k)).join("")}</div></details>
+    <a class="btn sun buybtn" href="${CHECKOUT_URL}" target="_blank" rel="noopener">Quero a cartilha por R$ ${PRICE_TXT}</a>
+    <p class="small" style="text-align:center;margin-top:8px">♾️ Acesso vitalício · ↩️ 30 dias de garantia</p>
+    <p class="foot">Fontes legais citadas: ECA, art. 53, parágrafo único; LDB, arts. 12, VII, e 14. O material é educativo e não substitui orientação jurídica.</p>`,"result",100);
+  updateMeter(false);
+  setTimeout(()=>{const b=document.getElementById("sbar");if(b)b.style.width=sc+"%";let n=0;const el=document.getElementById("snum");const iv=setInterval(()=>{n=Math.min(sc,n+2);if(el)el.textContent=n;if(n>=sc)clearInterval(iv)},25)},200);
+  const pc=document.getElementById("printCert");if(pc)pc.onclick=()=>{try{window.print()}catch(e){alert("Use o menu do navegador para imprimir ou salvar em PDF.")}};
+  const to=document.getElementById("toOffer");if(to)to.onclick=e=>{e.preventDefault();document.getElementById("offer").scrollIntoView({behavior:"smooth"})};
+  document.querySelectorAll("#buy,.buybtn").forEach(buy=>{buy.addEventListener("click",()=>track("InitiateCheckout",{value:PRICE,currency:"BRL"}));
+  if(CHECKOUT_URL.includes("SEU-LINK-AQUI")){buy.addEventListener("click",e=>{e.preventDefault();alert("Antes de publicar, configure o link real do checkout no código.");});}});
+}
+
+function track(ev,data){try{if(window.fbq){if(["ViewContent","Lead","InitiateCheckout"].includes(ev))window.fbq("track",ev,data||{});else window.fbq("trackCustom",ev,data||{});}}catch(e){}}
+back.onclick=()=>{
+  if(state.stage==="age"){intro();return;}
+  if(state.stage==="ready"){age();return;}
+  if(state.stage==="flow"){
+    if(state.index>0){state.index--;step();}else{ready();}
+    return;
+  }
+  if(state.stage==="capture"){state.index=FLOW.length-1;step();return;}
+  if(state.stage==="result"){capture();return;}
+};
+intro();
+</script>
+</body>
+</html>
