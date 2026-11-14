@@ -142,13 +142,14 @@ h3{font-size:19px;line-height:1.2;font-weight:900;margin-bottom:9px}
 .c2foot .l,.c2foot .r{font-size:1.35cqw;color:#2A332E;line-height:1.35;border-top:.18cqw solid #002776;padding-top:.7cqw}
 .c2foot .r b{display:block;color:#002776;font-size:1.45cqw;letter-spacing:.15cqw}
 .c2foot .r i{font-style:italic;color:#5E6B63}
+.c2wm{position:absolute;inset:0;z-index:5;display:grid;place-items:center;pointer-events:none;font-weight:900;font-size:13cqw;letter-spacing:2cqw;color:rgba(0,39,118,.13);transform:rotate(-18deg)}
 .c2foot .seal svg{width:13cqw;height:auto;display:block}
 @media print{
  @page{size:A4 landscape;margin:0}
  html,body{background:#fff!important}
  .top,.meter,.foot{display:none!important}
  .wrap{padding:0!important;max-width:none!important;min-height:0!important}
- #app>section>*:not(.certwrap){display:none!important}
+ #app>section>*:not(.certwrap):not(#certbox){display:none!important}
  #app>section{animation:none!important}
  .certwrap{width:296mm;margin:0!important}
  .cert2{box-shadow:none}
@@ -462,9 +463,9 @@ function sealSVG(){
   <text x="60" y="38" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="6.6" font-weight="900" fill="#002776" letter-spacing="1">PAIS PRESENTES</text>
   <text x="60" y="89" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="6.6" font-weight="900" fill="#002776" letter-spacing="1">NA ESCOLA</text></svg>`;
 }
-function certHTML(name){
+function certHTML(name,preview){
   const d=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-  return `<div class="certwrap"><div class="cert2" role="img" aria-label="Certificado de reconhecimento Pais Presentes na Escola em nome de ${esc(name)}"><div class="c2in">
+  return `<div class="certwrap"><div class="cert2" role="img" aria-label="Certificado de reconhecimento Pais Presentes na Escola em nome de ${esc(name)}">${preview?'<div class="c2wm">PRÉVIA</div>':""}<div class="c2in">
     <div class="c2top">${FLAG_SVG}CERTIFICADO DE RECONHECIMENTO${FLAG_SVG}</div>
     <div class="c2title">PAIS PRESENTES NA ESCOLA</div>
     <div class="c2bar"><i style="background:#009739"></i><i style="background:#FFDF00"></i><i style="background:#002776"></i></div>
@@ -500,7 +501,7 @@ function result(){
     <div class="card"><span class="pill">PONTOS QUE VOCÊ PODE FORTALECER</span><div class="result-list">${highlights.map(x=>`<div class="result-item"><div class="e">${x[0]}</div><div><b>${x[1]}</b><span>${x[2]}</span></div></div>`).join("")}</div>
       <p class="small">Este mapa é um resumo das respostas que você escolheu, sem comparação com outras famílias.</p>
     </div>
-    <h3 style="margin-top:22px">🏅 Seu certificado</h3>${certHTML(state.name)}<button class="btn" id="printCert" type="button" style="margin-top:6px">Salvar certificado em PDF / imprimir</button><p class="small" style="text-align:center;margin-top:6px">Na janela de impressão, escolha “Salvar como PDF”. Formato A4 horizontal.</p>
+    <h3 style="margin-top:22px">🏅 Seu certificado</h3>${certHTML(state.name,true)}<a class="btn" id="unlockCert" href="${CHECKOUT_URL}" target="_blank" rel="noopener" style="margin-top:6px">🔒 Liberar meu certificado em PDF</a><p class="small" style="text-align:center;margin-top:6px">O certificado em PDF, sem a marca de prévia, é liberado logo após a confirmação do pagamento da Cartilha (R$ ${PRICE_TXT}).</p>
     <div class="tip"><b>Seu próximo passo sugerido</b>${rec[0]} <strong>${rec[1]}</strong><br>${rec[2]}<br><br>Você pode começar com ações pequenas, considerando a idade do seu filho (${esc(ageText)}) e a rotina da sua família.</div>
     <h2>Como a Cartilha Pais Presentes na Escola pode ajudar</h2>
     <p class="lead">A proposta é reunir orientações e modelos para você não precisar começar do zero sempre que surgir uma dúvida.</p>
@@ -545,13 +546,12 @@ function result(){
     <p class="foot">Fontes legais citadas: ECA, art. 53, parágrafo único; LDB, arts. 12, VII, e 14. O material é educativo e não substitui orientação jurídica.</p>`,"result",100);
   updateMeter(false);
   setTimeout(()=>{const b=document.getElementById("sbar");if(b)b.style.width=sc+"%";let n=0;const el=document.getElementById("snum");const iv=setInterval(()=>{n=Math.min(sc,n+2);if(el)el.textContent=n;if(n>=sc)clearInterval(iv)},25)},200);
-  const pc=document.getElementById("printCert");if(pc)pc.onclick=()=>{try{window.print()}catch(e){alert("Use o menu do navegador para imprimir ou salvar em PDF.")}};
   const to=document.getElementById("toOffer");if(to)to.onclick=e=>{e.preventDefault();document.getElementById("offer").scrollIntoView({behavior:"smooth"})};
-  document.querySelectorAll("#buy,.buybtn").forEach(buy=>{buy.addEventListener("click",()=>track("InitiateCheckout",{value:PRICE,currency:"BRL"}));
+  document.querySelectorAll("#buy,.buybtn,#unlockCert").forEach(buy=>{buy.addEventListener("click",()=>{try{localStorage.setItem("ppe_nome",state.name)}catch(e){}track("InitiateCheckout",{value:PRICE,currency:"BRL"})});
   if(CHECKOUT_URL.includes("SEU-LINK-AQUI")){buy.addEventListener("click",e=>{e.preventDefault();alert("Antes de publicar, configure o link real do checkout no código.");});}});
 }
 
-function track(ev,data){try{if(window.fbq){if(["ViewContent","Lead","InitiateCheckout"].includes(ev))window.fbq("track",ev,data||{});else window.fbq("trackCustom",ev,data||{});}}catch(e){}}
+function track(ev,data){try{if(window.fbq){if(["ViewContent","Lead","InitiateCheckout","Purchase"].includes(ev))window.fbq("track",ev,data||{});else window.fbq("trackCustom",ev,data||{});}}catch(e){}}
 back.onclick=()=>{
   if(state.stage==="age"){intro();return;}
   if(state.stage==="ready"){age();return;}
@@ -562,7 +562,24 @@ back.onclick=()=>{
   if(state.stage==="capture"){state.index=FLOW.length-1;step();return;}
   if(state.stage==="result"){capture();return;}
 };
-intro();
+function release(){
+  updateMeter(false);
+  let nm="";try{nm=localStorage.getItem("ppe_nome")||""}catch(e){}
+  render(`<img src="img/logo.jpg" alt="Logo Pais Presentes na Escola" style="display:block;width:130px;height:auto;margin:0 auto 16px;background:#fff;border-radius:22px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.07)">
+    <span class="chip">✅ Pagamento confirmado</span><h1>Seu certificado está <span class="hl">liberado</span>!</h1>
+    <p class="lead">Obrigado por adquirir a Cartilha Pais Presentes na Escola. O acesso ao material completo chega no e-mail informado na compra.</p>
+    <div class="formrow"><label for="cn">Nome no certificado</label><input id="cn" type="text" maxlength="60" autocomplete="name" value="${esc(nm)}" placeholder="Digite seu nome completo"></div>
+    <div id="certbox">${nm.length>=2?certHTML(nm):""}</div>
+    <div class="err" id="err"></div>
+    <button class="btn" id="printCert" type="button">Salvar certificado em PDF / imprimir</button>
+    <p class="small" style="text-align:center;margin-top:6px">Na janela de impressão, escolha “Salvar como PDF”. Formato A4 horizontal.</p>`,"liberado",100,false);
+  const inp=document.getElementById("cn"),box=document.getElementById("certbox"),err=document.getElementById("err");
+  inp.oninput=()=>{const v=inp.value.trim().replace(/\s+/g," ");box.innerHTML=v.length>=2?certHTML(v):"";err.textContent="";try{localStorage.setItem("ppe_nome",v)}catch(e){}};
+  document.getElementById("printCert").onclick=()=>{if(inp.value.trim().length<2){err.textContent="Digite seu nome para gerar o certificado.";inp.focus();return;}try{window.print()}catch(e){alert("Use o menu do navegador para imprimir ou salvar em PDF.")}};
+  track("Purchase",{value:PRICE,currency:"BRL"});
+}
+let liberado=false;try{liberado=new URLSearchParams(location.search).get("acesso")==="liberado"}catch(e){}
+if(liberado)release();else intro();
 </script>
 </body>
 </html>
