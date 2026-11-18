@@ -11,6 +11,11 @@ import ResetPasswordPage from "@/features/auth/ResetPasswordPage";
 import OnboardingPage from "@/features/onboarding/OnboardingPage";
 import DashboardPage from "@/features/dashboard/DashboardPage";
 import SettingsPage from "@/features/settings/SettingsPage";
+import CustomersPage from "@/features/customers/CustomersPage";
+import ServicesPage from "@/features/services/ServicesPage";
+import OrdersPage from "@/features/orders/OrdersPage";
+import NewOrderPage from "@/features/orders/NewOrderPage";
+import OrderDetailPage from "@/features/orders/OrderDetailPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -52,6 +57,11 @@ export default function App() {
               }
             >
               <Route index element={<DashboardPage />} />
+              <Route path="pedidos" element={<OrdersPage />} />
+              <Route path="pedidos/novo" element={<NewOrderPage />} />
+              <Route path="pedidos/:id" element={<OrderDetailPage />} />
+              <Route path="clientes" element={<CustomersPage />} />
+              <Route path="servicos" element={<ServicesPage />} />
               <Route path="configuracoes" element={<SettingsPage />} />
             </Route>
 

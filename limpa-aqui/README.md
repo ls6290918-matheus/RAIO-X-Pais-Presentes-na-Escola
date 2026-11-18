@@ -1,9 +1,11 @@
-# Limpa Aqui — Fase 1, Etapa 1 (Fundação)
+# Limpa Aqui — Fase 1 (Etapas 1 e 2)
 
 SaaS de gestão para lavanderias de tênis e calçados.
 Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RLS).
 
-## O que esta etapa entrega
+## O que já está pronto
+
+### Etapa 1 — Fundação
 
 - Identidade visual (paleta do PRD, fonte Inter), painel com menu lateral e menu mobile.
 - Cadastro com confirmação de e-mail, login, recuperação e redefinição de senha.
@@ -11,14 +13,28 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 - Dashboard inicial (sem números fictícios) e tela de Configurações que salva no banco.
 - Banco multiempresa com RLS em todas as tabelas, testado com 15 testes automáticos.
 
-Módulos das próximas etapas aparecem no menu como "Em breve", desabilitados.
+### Etapa 2 — Operação
+- **Serviços**: catálogo com preço e prazo (em branco usa o prazo padrão). Só o dono cria, edita, desativa ou exclui.
+- **Clientes**: cadastro com busca por nome ou WhatsApp, botão de WhatsApp e atalho para novo pedido.
+  O WhatsApp não se repete dentro da mesma lavanderia.
+- **Pedidos**: vários itens por pedido (serviço, descrição do calçado, quantidade e valor), numeração automática
+  por lavanderia (#1, #2...), prazo sugerido pelo serviço mais demorado, total calculado no banco.
+  Status: Recebido → Em lavagem → Pronto → Entregue (ou Cancelado), com data de cada etapa.
+  Botão "Avisar no WhatsApp" com mensagem pronta conforme o status. Marcar como pago, mudar prazo e observações.
+- **Dashboard** com números reais: pedidos em aberto, prontos, para entregar hoje, atrasados e próximas entregas.
+
+Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Como colocar no ar
 
 ### 1. Criar o projeto no Supabase
 
 1. Crie uma conta em https://supabase.com e um projeto novo (região: São Paulo).
-2. Abra **SQL Editor**, cole todo o conteúdo de `supabase/migrations/20261118000001_etapa1_fundacao.sql` e clique em **Run**.
+2. Abra **SQL Editor** e rode, **nesta ordem**, cada arquivo de `supabase/migrations/` (cole o conteúdo e clique em **Run**):
+   1. `20261118000001_etapa1_fundacao.sql`
+   2. `20261118000002_etapa2_operacao.sql`
+
+   Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
 4. Em **Authentication → Sign In / Providers → Email**, deixe **Confirm email** ativado.
 5. Em **Authentication → URL Configuration**:
@@ -53,7 +69,7 @@ supabase/
 src/
   components/   layout (painel, telas de login, guardas de rota) e componentes visuais
   contexts/     sessão do usuário e lavanderia ativa
-  features/     auth, onboarding, dashboard, settings
+  features/     auth, onboarding, dashboard, settings, customers, services, orders
   lib/          cliente Supabase, formatação (BRL, datas, telefone, slug), mensagens de erro
 ```
 
@@ -66,15 +82,24 @@ src/
 | `business_members` | Quem acessa cada lavanderia (owner ou staff) |
 | `business_settings` | Prazo padrão de entrega, fuso horário |
 | `reserved_slugs` | Endereços proibidos (app, login, rastrear...) |
+| `customers` | Clientes da lavanderia (nome, WhatsApp, e-mail, observações) |
+| `services` | Catálogo de serviços (preço, prazo em dias, ativo) |
+| `orders` | Pedidos (número, cliente, status, data de entrega, total, pago, datas de cada etapa) |
+| `order_items` | Itens do pedido; guardam nome e preço do serviço na hora do pedido |
 
 Funções: `is_business_member`, `is_business_owner` (usadas pelo RLS), `check_slug_available`,
-`create_business` (cria lavanderia + dono + configurações numa transação) e `tables_without_rls` (diagnóstico).
+`create_business` (cria lavanderia + dono + configurações numa transação), `create_order` (pedido + itens + número + total
+numa transação), `set_order_status` (só transições válidas) e `tables_without_rls` (diagnóstico).
 
 Regras de segurança:
 
 - O navegador não insere nem apaga lavanderias ou membros; só a função `create_business` faz isso.
 - Membros leem os dados da própria lavanderia; só o dono edita.
 - Slug e numeração de pedidos são protegidos por trigger.
+- Pedidos e itens só são criados por `create_order`; status só muda por `set_order_status`. A tela só edita
+  prazo, pago e observações. O total é sempre calculado no banco.
+- Cliente e serviço de um pedido precisam ser da mesma lavanderia (chave estrangeira composta).
+- Funcionário (staff) cria clientes e pedidos; serviços, preços e exclusões são só do dono.
 - Visitante anônimo não lê nenhuma tabela.
 
 ## Testes do banco
@@ -85,10 +110,13 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **15 de 15 testes passaram**, incluindo isolamento entre duas lavanderias
-(usuário B não lê, não altera e não apaga dados do usuário A, nem forjando o id).
+Resultado da última execução: **30 de 30 testes passaram** (15 da Etapa 1 e 15 da Etapa 2), incluindo isolamento
+entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
+nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 
 ## Pendências conhecidas
 
+- Fotos dos calçados no pedido, link público de rastreio (`tracking_token` já existe na tabela) e pagamentos
+  parciais ficam para as próximas etapas.
 - Os e-mails do Supabase vêm em inglês até você traduzir os templates (passo 1.6).
 - Domínio `limpaaqui.com.br`: decisão adiada; o app funciona em qualquer domínio.

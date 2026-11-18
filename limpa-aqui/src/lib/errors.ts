@@ -3,6 +3,14 @@ export function friendlyError(err: unknown): string {
   const e = err as { message?: string; code?: string; status?: number } | null;
   const msg = e?.message ?? "";
 
+  // Restrições do banco com nome conhecido
+  const constraints: Array<[RegExp, string]> = [
+    [/customers_business_whatsapp_uq/, "Já existe um cliente com este WhatsApp."],
+    [/orders_business_id_customer_id_fkey/, "Este cliente tem pedidos e não pode ser excluído."],
+  ];
+  for (const [re, text] of constraints) if (re.test(msg) || re.test((e as { details?: string })?.details ?? "")) return text;
+  if (e?.code === "42501") return "Você não tem permissão para fazer isso.";
+
   // Mensagens já escritas em português pelas funções do banco (RAISE EXCEPTION)
   if (e?.code && ["P0001", "22023", "23505", "28000"].includes(e.code) && msg) return msg;
 

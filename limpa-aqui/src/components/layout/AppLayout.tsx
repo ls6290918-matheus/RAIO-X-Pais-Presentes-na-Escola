@@ -24,9 +24,9 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 // Itens "soon" ficam visíveis, mas desabilitados até a etapa correspondente.
 const NAV: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/pedidos", label: "Pedidos", icon: PackageOpen, soon: true },
-  { to: "/app/clientes", label: "Clientes", icon: Users, soon: true },
-  { to: "/app/servicos", label: "Serviços", icon: Sparkles, soon: true },
+  { to: "/app/pedidos", label: "Pedidos", icon: PackageOpen },
+  { to: "/app/clientes", label: "Clientes", icon: Users },
+  { to: "/app/servicos", label: "Serviços", icon: Sparkles },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet, soon: true },
   { to: "/app/agenda", label: "Agenda", icon: CalendarDays, soon: true },
   { to: "/app/pagina-publica", label: "Página pública", icon: Globe, soon: true },

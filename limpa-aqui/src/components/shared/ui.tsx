@@ -1,11 +1,14 @@
 import {
   forwardRef,
+  useEffect,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
 
 export const cn = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(" ");
 
@@ -16,25 +19,25 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   block?: boolean;
 };
 
-export function Button({ variant = "primary", loading, block, className, children, disabled, ...rest }: ButtonProps) {
+/** Classes do botão, para usar também em links (<Link className={buttonClass()}>). */
+export function buttonClass(variant: NonNullable<ButtonProps["variant"]> = "primary", block?: boolean) {
   const styles = {
     primary: "bg-agua text-petroleo hover:bg-agua-600 focus-visible:ring-agua/50",
     dark: "bg-petroleo text-white hover:bg-petroleo-600 focus-visible:ring-petroleo/40",
     outline: "border border-grafite/15 bg-white text-grafite hover:bg-nevoa focus-visible:ring-grafite/20",
     ghost: "text-grafite hover:bg-nevoa focus-visible:ring-grafite/20",
   }[variant];
+  return cn(
+    "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition",
+    "focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60",
+    styles,
+    block && "w-full",
+  );
+}
+
+export function Button({ variant = "primary", loading, block, className, children, disabled, ...rest }: ButtonProps) {
   return (
-    <button
-      className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition",
-        "focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60",
-        styles,
-        block && "w-full",
-        className,
-      )}
-      disabled={disabled || loading}
-      {...rest}
-    >
+    <button className={cn(buttonClass(variant, block), className)} disabled={disabled || loading} {...rest}>
       {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
       {children}
     </button>
@@ -111,6 +114,25 @@ export function Select({
     >
       {children}
     </select>
+  );
+}
+
+export function Textarea({
+  className,
+  invalid,
+  ...rest
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
+  return (
+    <textarea
+      className={cn(
+        "min-h-[88px] w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-grafite placeholder:text-grafite-300 transition",
+        "focus:outline-none focus:ring-4 disabled:bg-nevoa disabled:text-grafite-500",
+        invalid ? "border-red-400 focus:ring-red-100" : "border-grafite/15 focus:border-agua focus:ring-agua/20",
+        className,
+      )}
+      aria-invalid={invalid || undefined}
+      {...rest}
+    />
   );
 }
 
@@ -219,6 +241,79 @@ export function Logo({ light = false }: { light?: boolean }) {
       <span className={cn("text-lg font-bold tracking-tight", light ? "text-white" : "text-petroleo")}>
         Limpa<span className="text-agua"> Aqui</span>
       </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ PageHeader */
+export function PageHeader({
+  title,
+  description,
+  action,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight text-petroleo">{title}</h1>
+        {description && <p className="mt-1 text-sm text-grafite-500">{description}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ Modal */
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  // Portal: o modal pode ser aberto de dentro de outro formulário sem aninhar <form> no HTML
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="absolute inset-0 bg-petroleo/60" onClick={onClose} />
+      <div className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-6 shadow-card sm:max-w-lg sm:rounded-2xl">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-petroleo">{title}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-grafite-500 hover:bg-nevoa" aria-label="Fechar">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/* ------------------------------------------------------------------ Spinner */
+export function InlineLoader() {
+  return (
+    <div className="flex justify-center py-12" aria-busy="true">
+      <Loader2 className="h-6 w-6 animate-spin text-petroleo" aria-label="Carregando" />
     </div>
   );
 }
