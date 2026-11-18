@@ -10,7 +10,7 @@ import { formatBRL, moneyInput, parseMoney } from "@/lib/format";
 import type { Service } from "@/lib/types";
 import { fieldErrors } from "@/features/auth/schemas";
 
-export const SERVICE_COLUMNS = "id, business_id, name, description, price, due_days, active";
+export const SERVICE_COLUMNS = "id, business_id, name, description, price, due_days, active, category_code, pricing_unit";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome do serviço.").max(80, "Nome muito longo."),

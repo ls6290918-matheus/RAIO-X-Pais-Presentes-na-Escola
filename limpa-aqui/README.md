@@ -38,6 +38,27 @@ restrita no Google Cloud Console: *Application restrictions → Websites* com o 
 e `http://localhost:8080/*`; *API restrictions* só com **Maps JavaScript API** e **Places API (New)**, ambas ativadas,
 com faturamento ligado no projeto do Google Cloud. Nunca coloque a chave no repositório, só no `.env` e na Vercel.
 
+### Onboarding dinâmico — Etapa 1 (banco e motor de regras)
+A configuração automática da empresa sai de **regras em tabelas**, não de IA. Para mudar uma regra, edite as tabelas
+do catálogo (por migration ou no SQL Editor) e rode `apply_business_rules` de novo para cada empresa.
+
+| Tabela | O que guarda |
+| --- | --- |
+| `service_categories` | As 13 categorias do assistente e as unidades de cobrança aceitas |
+| `service_templates` | Serviços sugeridos por categoria (o usuário adiciona e define o preço) |
+| `features` | Recursos do sistema e se já estão `disponivel` ou `em_breve` |
+| `feature_rules` | "Se situação/categoria/operação/equipe = X, habilite o recurso Y" |
+| `segment_modules` | Módulos em destaque no painel de iniciante, profissional e empresa |
+| `business_categories` | Categorias de cada empresa (catálogo ou personalizadas), ativas ou não |
+| `business_features` | Recursos ligados em cada empresa; `source = manual` quando o dono mexe à mão (o recálculo respeita) |
+| `onboarding_profiles` | Respostas do assistente e etapa atual, por usuário (retomada após recarregar) |
+
+Funções: `save_onboarding_step` (salva só o que mudou em cada etapa), `complete_onboarding` (cria ou reaproveita a
+lavanderia, grava a identidade e aplica as regras), `apply_business_rules` (idempotente, só o dono) e
+`get_setup_checklist` (primeiros passos calculados dos dados reais, não de cliques). `services` ganhou
+`category_code` e `pricing_unit` (unidade, par, peça, kg, conjunto, m², orçamento); `businesses` ganhou e-mail,
+região atendida, horário de funcionamento, logotipo e segmento.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -60,6 +81,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    1. `20261118000001_etapa1_fundacao.sql`
    2. `20261118000002_etapa2_operacao.sql`
    3. `20261119000003_etapa2b_enderecos.sql`
+   4. `20261120000004_onboarding_dinamico.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -137,7 +159,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **37 de 37 testes passaram** (15 da Etapa 1, 15 da Etapa 2 e 7 de endereços), incluindo isolamento
+Resultado da última execução: **53 de 53 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 16 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

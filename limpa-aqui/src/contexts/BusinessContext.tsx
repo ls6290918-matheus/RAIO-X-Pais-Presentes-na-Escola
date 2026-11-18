@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { ADDRESS_COLUMNS, type Address } from "@/lib/maps";
+import type { BusinessSegment } from "@/lib/types";
 
 export type Business = Address & {
   id: string;
@@ -9,6 +10,11 @@ export type Business = Address & {
   slug: string;
   phone: string | null;
   whatsapp: string | null;
+  email: string | null;
+  service_region: string | null;
+  opening_hours: Record<string, string> | null;
+  logo_path: string | null;
+  segment: BusinessSegment | null;
   created_at: string;
 };
 
@@ -88,7 +94,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     const [{ data: b, error: bErr }, { data: s, error: sErr }] = await Promise.all([
       supabase
         .from("businesses")
-        .select(`id, name, slug, phone, whatsapp, created_at, ${ADDRESS_COLUMNS}`)
+        .select(`id, name, slug, phone, whatsapp, email, service_region, opening_hours, logo_path, segment, created_at, ${ADDRESS_COLUMNS}`)
         .eq("id", member.business_id)
         .single(),
       supabase

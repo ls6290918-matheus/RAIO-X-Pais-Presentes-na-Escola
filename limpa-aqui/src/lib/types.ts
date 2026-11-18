@@ -10,6 +10,11 @@ export type Customer = Address & {
   created_at: string;
 };
 
+/** Unidade de cobrança do serviço (enum pricing_unit no banco). */
+export type PricingUnit = "unidade" | "par" | "peca" | "kg" | "conjunto" | "m2" | "orcamento";
+
+export type BusinessSegment = "iniciante" | "profissional" | "empresa";
+
 export type Service = {
   id: string;
   business_id: string;
@@ -18,6 +23,8 @@ export type Service = {
   price: number;
   due_days: number | null;
   active: boolean;
+  category_code: string | null;
+  pricing_unit: PricingUnit;
 };
 
 export type OrderStatus = "recebido" | "em_lavagem" | "pronto" | "entregue" | "cancelado";
