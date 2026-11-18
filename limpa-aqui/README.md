@@ -96,6 +96,15 @@ região atendida, horário de funcionamento, logotipo e segmento.
 - Arquivos no bucket **privado** `order-photos`, em `<empresa>/<pedido>/<arquivo>`: só membros da lavanderia leem,
   enviam e apagam (políticas no Storage + tabela `order_photos` com RLS); a tela usa links temporários de 1 hora.
 
+### Onboarding dinâmico — Etapa 6 (calculadoras de custo e preço)
+- `/app/calculadoras` (recurso `calculadoras`): **Quanto vale a sua hora** = (quanto quer tirar no mês + custos
+  fixos) ÷ horas trabalhadas no mês; fica salvo em `business_settings`.
+- **Custo e preço de um serviço**: materiais (produtos, água, energia, embalagem, outros) + tempo × valor da hora.
+  Preço sugerido = custo ÷ (1 − margem − taxa da maquininha), também arredondado para o próximo ",90"; compara com o
+  preço atual e mostra quanto sobra. Custos de cada serviço ficam em `service_costs`; "Usar como preço" atualiza o
+  serviço (pedidos já criados não mudam). As contas estão em `src/features/calculators/calc.ts`.
+- Tudo é apresentado como estimativa feita com os números do próprio usuário, sem promessa de lucro.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -123,6 +132,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    6. `20261122000006_restaurar_recursos.sql`
    7. `20261123000007_pedidos_por_categoria.sql`
    8. `20261124000008_fotos_pedido.sql`
+   9. `20261125000009_calculadoras.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -200,7 +210,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **70 de 70 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 33 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **76 de 76 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 39 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

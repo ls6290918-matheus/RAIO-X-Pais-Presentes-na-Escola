@@ -22,6 +22,11 @@ export type BusinessSettings = {
   business_id: string;
   default_due_days: number;
   timezone: string;
+  income_goal: number | null;
+  fixed_costs: number | null;
+  work_hours_day: number | null;
+  work_days_month: number | null;
+  hourly_rate: number | null;
 };
 
 export type BusinessRole = "owner" | "staff";
@@ -132,7 +137,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         .single(),
       supabase
         .from("business_settings")
-        .select("business_id, default_due_days, timezone")
+        .select("business_id, default_due_days, timezone, income_goal, fixed_costs, work_hours_day, work_days_month, hourly_rate")
         .eq("business_id", member.business_id)
         .single(),
       supabase.from("features").select("code, name, description, route, status, sort").order("sort"),
