@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-nevoa font-sans text-grafite antialiased; }
+  ::selection { @apply bg-agua/30; }
+}
