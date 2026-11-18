@@ -1,44 +1,49 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  CalendarDays,
   ChevronDown,
-  Globe,
   LayoutDashboard,
   LogOut,
   Menu,
-  PackageOpen,
-  Route,
   Settings,
-  Sparkles,
-  Users,
-  Wallet,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { FEATURE_META, LEGACY_SOON, MENU_FEATURES, featureIcon } from "@/lib/featureMeta";
+import { logoUrl } from "@/lib/logo";
 
 type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 
-// Itens "soon" ficam visíveis, mas desabilitados até a etapa correspondente.
-const NAV: NavItem[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/pedidos", label: "Pedidos", icon: PackageOpen },
-  { to: "/app/rotas", label: "Rotas", icon: Route },
-  { to: "/app/clientes", label: "Clientes", icon: Users },
-  { to: "/app/servicos", label: "Serviços", icon: Sparkles },
-  { to: "/app/financeiro", label: "Financeiro", icon: Wallet, soon: true },
-  { to: "/app/agenda", label: "Agenda", icon: CalendarDays, soon: true },
-  { to: "/app/pagina-publica", label: "Página pública", icon: Globe, soon: true },
-  { to: "/app/configuracoes", label: "Configurações", icon: Settings },
-];
+/**
+ * Menu montado pelos recursos ligados na lavanderia (business_features).
+ * Recursos "em breve" aparecem desabilitados, sem tela.
+ * Lavanderia ainda não configurada pelo assistente vê o menu de antes.
+ */
+function useNav(): NavItem[] {
+  const { features, configured, hasFeature } = useBusiness();
+  const items: NavItem[] = [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }];
+  for (const code of MENU_FEATURES) {
+    const f = features.find((x) => x.code === code);
+    if (!f) continue;
+    const label = FEATURE_META[code]?.menuLabel ?? f.name;
+    if (f.status === "disponivel" && f.route) {
+      if (hasFeature(code)) items.push({ to: f.route, label, icon: featureIcon(code) });
+    } else if (configured ? f.enabled : LEGACY_SOON.includes(code)) {
+      items.push({ to: `/app/${code}`, label, icon: featureIcon(code), soon: true });
+    }
+  }
+  items.push({ to: "/app/configuracoes", label: "Configurações", icon: Settings });
+  return items;
+}
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const nav = useNav();
   return (
     <nav className="space-y-1" aria-label="Menu principal">
-      {NAV.map(({ to, label, icon: Icon, soon }) =>
+      {nav.map(({ to, label, icon: Icon, soon }) =>
         soon ? (
           <div
             key={to}
@@ -169,6 +174,9 @@ export function AppLayout() {
             >
               <Menu className="h-5 w-5" />
             </button>
+            {business?.logo_path && (
+              <img src={logoUrl(business.logo_path) ?? undefined} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
+            )}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-petroleo">{business?.name}</p>
               <p className="truncate text-xs text-grafite-500">limpaaqui.com.br/{business?.slug}</p>

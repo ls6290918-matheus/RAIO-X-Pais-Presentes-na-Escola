@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { PUBLIC_DOMAIN, maskPhone, onlyDigits } from "@/lib/format";
 import { fieldErrors } from "@/features/auth/schemas";
+import { CategoriesFeaturesCard } from "./CategoriesFeaturesCard";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome da lavanderia.").max(80, "Nome muito longo."),
@@ -168,6 +169,8 @@ export default function SettingsPage() {
           )}
         </Card>
       </form>
+
+      <CategoriesFeaturesCard />
     </div>
   );
 }

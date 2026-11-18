@@ -68,6 +68,19 @@ região atendida, horário de funcionamento, logotipo e segmento.
 - Logotipos no bucket público `logos` do Supabase Storage (migration `20261121000005_logos_storage.sql`): cada usuário
   só grava na própria pasta; a imagem é reduzida para 512 px em WebP no navegador.
 
+### Onboarding dinâmico — Etapa 3 (painel personalizado)
+- **Painel por segmento**: Começando (checklist e módulos para começar em destaque), Profissional (atalhos,
+  indicadores e próximas entregas) e Empresa (indicadores e gestão). Lavanderias ainda não configuradas mantêm o
+  painel de antes, com o convite "Personalize seu painel".
+- **Menu e telas pelos recursos ligados** (`business_features`): recurso desligado some do menu e a tela mostra
+  "está desligado"; recursos ainda não construídos aparecem como "Em breve".
+- **Checklist** vindo de `get_setup_checklist` (só marca o que existe de verdade no sistema).
+- **Configurações → Categorias e recursos**: ligar/desligar categorias (recalcula pelas regras), serviços
+  personalizados, ligar/desligar recursos (fica como "ajustado por você"), **Restaurar automático**
+  (`reset_business_features`) e **Refazer o assistente**.
+- **Serviços**: categoria, forma de cobrança (unidade, par, peça, kg, conjunto, m², sob orçamento) e sugestões das
+  categorias atendidas para adicionar com um clique, sempre sem preço sugerido.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -92,6 +105,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    3. `20261119000003_etapa2b_enderecos.sql`
    4. `20261120000004_onboarding_dinamico.sql`
    5. `20261121000005_logos_storage.sql`
+   6. `20261122000006_restaurar_recursos.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -169,7 +183,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **53 de 53 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 16 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **57 de 57 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 20 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Clock, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Clock, Lightbulb, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { z } from "zod";
-import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, PageHeader, Textarea, cn } from "@/components/shared/ui";
+import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, PageHeader, Select, Textarea, cn } from "@/components/shared/ui";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
-import { formatBRL, moneyInput, parseMoney } from "@/lib/format";
-import type { Service } from "@/lib/types";
+import { moneyInput, parseMoney } from "@/lib/format";
+import type { PricingUnit, Service } from "@/lib/types";
+import { PRICING_UNITS, priceLabel, unitShort } from "@/lib/pricing";
 import { fieldErrors } from "@/features/auth/schemas";
 
 export const SERVICE_COLUMNS = "id, business_id, name, description, price, due_days, active, category_code, pricing_unit";
@@ -15,27 +16,53 @@ export const SERVICE_COLUMNS = "id, business_id, name, description, price, due_d
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome do serviço.").max(80, "Nome muito longo."),
   description: z.string().trim().max(300, "Máximo de 300 caracteres."),
-  price: z
-    .string()
-    .transform(parseMoney)
-    .refine((n) => !Number.isNaN(n), "Informe o preço. Ex.: 49,90")
-    .refine((n) => n <= 99999, "Preço muito alto."),
+  price: z.string(),
   dueDays: z
     .string()
     .trim()
     .refine((v) => v === "" || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 60), "De 1 a 60 dias, ou deixe em branco."),
   active: z.boolean(),
+  pricingUnit: z.enum(["unidade", "par", "peca", "kg", "conjunto", "m2", "orcamento"]),
+  categoryCode: z.string(),
 });
 
-function ServiceForm({ service, onSaved, onCancel }: { service: Service | null; onSaved: () => void; onCancel: () => void }) {
+type Category = { code: string; name: string; pricing_units: PricingUnit[] };
+type Template = { category_code: string; name: string; pricing_unit: PricingUnit };
+
+/** Preço: obrigatório, exceto "sob orçamento" (vazio = definido em cada pedido). */
+function checkPrice(raw: string, unit: PricingUnit): { value?: number; error?: string } {
+  if (unit === "orcamento" && raw.trim() === "") return { value: 0 };
+  const n = parseMoney(raw);
+  if (Number.isNaN(n)) return { error: "Informe o preço. Ex.: 49,90" };
+  if (n > 99999) return { error: "Preço muito alto." };
+  return { value: n };
+}
+
+function ServiceForm({
+  service,
+  template,
+  categories,
+  onSaved,
+  onCancel,
+}: {
+  service: Service | null;
+  template?: Template | null;
+  categories: Category[];
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
   const { business, settings } = useBusiness();
   const [form, setForm] = useState({
-    name: service?.name ?? "",
+    name: service?.name ?? template?.name ?? "",
     description: service?.description ?? "",
-    price: service ? moneyInput(service.price) : "",
+    // Sugestão nunca traz preço: quem define é o dono
+    price: service && !(service.pricing_unit === "orcamento" && Number(service.price) === 0) ? moneyInput(service.price) : "",
     dueDays: service?.due_days ? String(service.due_days) : "",
     active: service?.active ?? true,
+    pricingUnit: (service?.pricing_unit ?? template?.pricing_unit ?? "unidade") as PricingUnit,
+    categoryCode: service?.category_code ?? template?.category_code ?? "",
   });
+  const allowedUnits = categories.find((c) => c.code === form.categoryCode)?.pricing_units;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -44,7 +71,10 @@ function ServiceForm({ service, onSaved, onCancel }: { service: Service | null; 
     e.preventDefault();
     if (!business) return;
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    const price = checkPrice(form.price, form.pricingUnit);
+    if (!parsed.success || price.error) {
+      return setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error)), ...(price.error ? { price: price.error } : {}) });
+    }
     setErrors({});
     setError(null);
     setSaving(true);
@@ -52,9 +82,11 @@ function ServiceForm({ service, onSaved, onCancel }: { service: Service | null; 
     const values = {
       name: d.name,
       description: d.description || null,
-      price: d.price,
+      price: price.value!,
       due_days: d.dueDays ? Number(d.dueDays) : null,
       active: d.active,
+      pricing_unit: d.pricingUnit,
+      category_code: d.categoryCode || null,
     };
     const { error: err } = service
       ? await supabase.from("services").update(values).eq("id", service.id)
@@ -78,7 +110,37 @@ function ServiceForm({ service, onSaved, onCancel }: { service: Service | null; 
         />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Preço (R$)" htmlFor="s-price" error={errors.price}>
+        <Field label="Categoria" htmlFor="s-cat">
+          <Select id="s-cat" value={form.categoryCode} onChange={(e) => setForm((f) => ({ ...f, categoryCode: e.target.value }))}>
+            <option value="">Sem categoria</option>
+            {categories.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          label="Forma de cobrança"
+          htmlFor="s-unit"
+          hint={allowedUnits && !allowedUnits.includes(form.pricingUnit) ? "Pouco comum para esta categoria, mas permitido." : undefined}
+        >
+          <Select id="s-unit" value={form.pricingUnit} onChange={(e) => setForm((f) => ({ ...f, pricingUnit: e.target.value as PricingUnit }))}>
+            {PRICING_UNITS.map((u) => (
+              <option key={u.value} value={u.value}>
+                {u.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label={form.pricingUnit === "orcamento" ? "A partir de (R$, opcional)" : `Preço por ${unitShort(form.pricingUnit)} (R$)`}
+          htmlFor="s-price"
+          error={errors.price}
+          hint={form.pricingUnit === "orcamento" ? "O valor final é combinado em cada pedido." : undefined}
+        >
           <Input
             id="s-price"
             inputMode="decimal"
@@ -143,6 +205,28 @@ export default function ServicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [params] = useSearchParams();
   const [editing, setEditing] = useState<Service | null | undefined>(params.get("novo") && role === "owner" ? null : undefined);
+  const [template, setTemplate] = useState<Template | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [suggestions, setSuggestions] = useState<Template[]>([]);
+  const [activeCats, setActiveCats] = useState<string[]>([]);
+
+  // Catálogo de categorias e sugestões das categorias que a lavanderia atende
+  useEffect(() => {
+    if (!business) return;
+    void (async () => {
+      const [c, bc] = await Promise.all([
+        supabase.from("service_categories").select("code, name, pricing_units").order("sort"),
+        supabase.from("business_categories").select("category_code").eq("business_id", business.id).eq("active", true).not("category_code", "is", null),
+      ]);
+      setCategories((c.data as Category[]) ?? []);
+      const codes = ((bc.data ?? []) as Array<{ category_code: string }>).map((r) => r.category_code);
+      setActiveCats(codes);
+      if (codes.length) {
+        const { data } = await supabase.from("service_templates").select("category_code, name, pricing_unit").in("category_code", codes).order("sort");
+        setSuggestions((data as Template[]) ?? []);
+      } else setSuggestions([]);
+    })();
+  }, [business]);
 
   const load = useCallback(async () => {
     if (!business) return;
@@ -168,6 +252,10 @@ export default function ServicesPage() {
     setServices((list) => list.filter((x) => x.id !== s.id));
   }
 
+  const existing = new Set(services.map((s) => s.name.trim().toLowerCase()));
+  const pending = suggestions.filter((t) => !existing.has(t.name.trim().toLowerCase()));
+  const catName = (code: string) => categories.find((c) => c.code === code)?.name ?? code;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -175,7 +263,12 @@ export default function ServicesPage() {
         description="Seu catálogo de serviços e preços."
         action={
           isOwner && (
-            <Button onClick={() => setEditing(null)}>
+            <Button
+              onClick={() => {
+                setTemplate(null);
+                setEditing(null);
+              }}
+            >
               <Plus className="h-4 w-4" aria-hidden /> Novo serviço
             </Button>
           )
@@ -184,6 +277,49 @@ export default function ServicesPage() {
 
       {!isOwner && <Alert>Somente o dono da lavanderia pode alterar serviços e preços.</Alert>}
       {error && <Alert>{error}</Alert>}
+
+      {isOwner && !loading && pending.length > 0 && (
+        <Card className="p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-agua-50 text-petroleo">
+              <Lightbulb className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-petroleo">Sugestões para os serviços que você oferece</h2>
+              <p className="text-xs text-grafite-500">Adicione com um clique. Você define o preço; o Limpa Aqui não sugere valores.</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-4">
+            {activeCats
+              .filter((code) => pending.some((t) => t.category_code === code))
+              .map((code) => (
+                <div key={code}>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-grafite-500">{catName(code)}</p>
+                  <ul className="flex flex-wrap gap-2">
+                    {pending
+                      .filter((t) => t.category_code === code)
+                      .map((t) => (
+                        <li key={t.name}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTemplate(t);
+                              setEditing(null);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-grafite/15 bg-white px-3 py-1.5 text-sm text-grafite transition hover:border-agua hover:bg-agua-50"
+                          >
+                            <Plus className="h-3.5 w-3.5 text-agua-600" aria-hidden />
+                            {t.name}
+                            <span className="text-xs text-grafite-500">· {unitShort(t.pricing_unit)}</span>
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
 
       {loading ? (
         <InlineLoader />
@@ -207,7 +343,7 @@ export default function ServicesPage() {
               {s.description && <p className="mt-1 line-clamp-2 text-sm text-grafite-500">{s.description}</p>}
               <div className="mt-4 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-xl font-semibold tracking-tight text-petroleo">{formatBRL(s.price)}</p>
+                  <p className="text-xl font-semibold tracking-tight text-petroleo">{priceLabel(s.price, s.pricing_unit)}</p>
                   <p className="mt-0.5 flex items-center gap-1 text-xs text-grafite-500">
                     <Clock className="h-3.5 w-3.5" aria-hidden />
                     {s.due_days ?? settings?.default_due_days ?? 3} dias{!s.due_days && " (padrão)"}
@@ -231,8 +367,10 @@ export default function ServicesPage() {
 
       <Modal open={editing !== undefined} title={editing ? "Editar serviço" : "Novo serviço"} onClose={() => setEditing(undefined)}>
         <ServiceForm
-          key={editing?.id ?? "novo"}
+          key={editing?.id ?? `novo-${template?.name ?? ""}`}
           service={editing ?? null}
+          template={editing ? null : template}
+          categories={categories}
           onCancel={() => setEditing(undefined)}
           onSaved={() => {
             setEditing(undefined);

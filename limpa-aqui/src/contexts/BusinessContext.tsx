@@ -26,6 +26,18 @@ export type BusinessSettings = {
 
 export type BusinessRole = "owner" | "staff";
 
+/** Recurso do catálogo + se está ligado nesta lavanderia. */
+export type FeatureState = {
+  code: string;
+  name: string;
+  description: string | null;
+  route: string | null;
+  status: "disponivel" | "em_breve";
+  sort: number;
+  enabled: boolean;
+  source: "regra" | "manual" | null;
+};
+
 type BusinessState = {
   business: Business | null;
   settings: BusinessSettings | null;
@@ -33,6 +45,14 @@ type BusinessState = {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  /** Todos os recursos do catálogo, com o estado nesta lavanderia. */
+  features: FeatureState[];
+  /** Módulos em destaque para o segmento da lavanderia (na ordem). */
+  segmentModules: string[];
+  /** false = lavanderia ainda não configurada pelo assistente (usa o painel padrão de antes). */
+  configured: boolean;
+  /** Recurso ligado? Sem configuração, vale o comportamento antigo: tudo o que já existe fica disponível. */
+  hasFeature: (code: string) => boolean;
 };
 
 const BusinessContext = createContext<BusinessState | null>(null);
@@ -54,6 +74,18 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   // Ao recarregar uma lavanderia já exibida (ex.: depois de salvar), não volta para a tela de carregamento
   const loading = (fetching && !business) || loadedFor !== userId;
   const [error, setError] = useState<string | null>(null);
+  const [features, setFeatures] = useState<FeatureState[]>([]);
+  const [segmentModules, setSegmentModules] = useState<string[]>([]);
+  const configured = features.some((f) => f.source !== null);
+
+  const hasFeature = useCallback(
+    (code: string) => {
+      const f = features.find((x) => x.code === code);
+      if (!f) return false;
+      return configured ? f.enabled : f.status === "disponivel";
+    },
+    [features, configured],
+  );
 
   const refresh = useCallback(async () => {
     const finish = () => {
@@ -87,11 +119,12 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       setBusiness(null);
       setSettings(null);
       setRole(null);
+      setFeatures([]);
       finish();
       return;
     }
 
-    const [{ data: b, error: bErr }, { data: s, error: sErr }] = await Promise.all([
+    const [{ data: b, error: bErr }, { data: s, error: sErr }, cat, bf] = await Promise.all([
       supabase
         .from("businesses")
         .select(`id, name, slug, phone, whatsapp, email, service_region, opening_hours, logo_path, segment, created_at, ${ADDRESS_COLUMNS}`)
@@ -102,9 +135,26 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         .select("business_id, default_due_days, timezone")
         .eq("business_id", member.business_id)
         .single(),
+      supabase.from("features").select("code, name, description, route, status, sort").order("sort"),
+      supabase.from("business_features").select("feature_code, enabled, source").eq("business_id", member.business_id),
     ]);
 
     if (bErr || sErr) setError((bErr ?? sErr)!.message);
+    const own = new Map(((bf.data ?? []) as Array<{ feature_code: string; enabled: boolean; source: "regra" | "manual" }>).map((r) => [r.feature_code, r]));
+    setFeatures(
+      ((cat.data ?? []) as Array<Omit<FeatureState, "enabled" | "source">>).map((f) => ({
+        ...f,
+        enabled: own.get(f.code)?.enabled ?? false,
+        source: own.get(f.code)?.source ?? null,
+      })),
+    );
+    const segment = (b as Business | null)?.segment;
+    if (segment) {
+      const { data: mods } = await supabase.from("segment_modules").select("feature_code").eq("segment", segment).order("sort");
+      setSegmentModules(((mods ?? []) as Array<{ feature_code: string }>).map((m) => m.feature_code));
+    } else {
+      setSegmentModules([]);
+    }
     setBusiness((b as Business) ?? null);
     setSettings((s as BusinessSettings) ?? null);
     setRole(member.role as BusinessRole);
@@ -116,7 +166,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   return (
-    <BusinessContext.Provider value={{ business, settings, role, loading, error, refresh }}>
+    <BusinessContext.Provider value={{ business, settings, role, loading, error, refresh, features, segmentModules, configured, hasFeature }}>
       {children}
     </BusinessContext.Provider>
   );

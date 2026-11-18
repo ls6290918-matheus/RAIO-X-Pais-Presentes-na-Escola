@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { BusinessProvider } from "@/contexts/BusinessContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { GuestOnly, RequireAuth, RequireBusiness, RequireNoBusiness, RequireOwner } from "@/components/layout/Guards";
+import { GuestOnly, RequireAuth, RequireBusiness, RequireFeature, RequireNoBusiness, RequireOwner } from "@/components/layout/Guards";
 import { supabaseConfigured } from "@/lib/supabase";
 import LoginPage from "@/features/auth/LoginPage";
 import SignupPage from "@/features/auth/SignupPage";
@@ -71,12 +71,12 @@ export default function App() {
               }
             >
               <Route index element={<DashboardPage />} />
-              <Route path="pedidos" element={<OrdersPage />} />
-              <Route path="pedidos/novo" element={<NewOrderPage />} />
-              <Route path="pedidos/:id" element={<OrderDetailPage />} />
-              <Route path="rotas" element={<RoutesPage />} />
-              <Route path="clientes" element={<CustomersPage />} />
-              <Route path="servicos" element={<ServicesPage />} />
+              <Route path="pedidos" element={<RequireFeature code="pedidos"><OrdersPage /></RequireFeature>} />
+              <Route path="pedidos/novo" element={<RequireFeature code="pedidos"><NewOrderPage /></RequireFeature>} />
+              <Route path="pedidos/:id" element={<RequireFeature code="pedidos"><OrderDetailPage /></RequireFeature>} />
+              <Route path="rotas" element={<RequireFeature code="entregas"><RoutesPage /></RequireFeature>} />
+              <Route path="clientes" element={<RequireFeature code="clientes"><CustomersPage /></RequireFeature>} />
+              <Route path="servicos" element={<RequireFeature code="servicos"><ServicesPage /></RequireFeature>} />
               <Route path="configuracoes" element={<SettingsPage />} />
             </Route>
 

@@ -22,6 +22,7 @@ import { friendlyError } from "@/lib/errors";
 import { addDaysISO, formatBRL, maskPhone, moneyInput, parseMoney, searchTerm, todayISO } from "@/lib/format";
 import type { Customer, DeliveryType, Service } from "@/lib/types";
 import { formatAddress, hasAddress } from "@/lib/maps";
+import { priceLabel, unitShort } from "@/lib/pricing";
 import { CUSTOMER_COLUMNS, CustomerForm } from "@/features/customers/CustomerForm";
 import { SERVICE_COLUMNS } from "@/features/services/ServicesPage";
 
@@ -320,7 +321,7 @@ export default function NewOrderPage() {
                         <option value="">Escolha</option>
                         {services.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.name} — {formatBRL(s.price)}
+                            {s.name} — {priceLabel(s.price, s.pricing_unit)}
                           </option>
                         ))}
                       </Select>
@@ -334,7 +335,7 @@ export default function NewOrderPage() {
                         invalid={!!errors[`desc-${it.key}`]}
                       />
                     </Field>
-                    <Field label="Quantidade (pares)" htmlFor={`qty-${it.key}`} error={errors[`qty-${it.key}`]}>
+                    <Field label={`Quantidade${serviceById.get(it.serviceId) ? ` (${unitShort(serviceById.get(it.serviceId)!.pricing_unit)})` : ""}`} htmlFor={`qty-${it.key}`} error={errors[`qty-${it.key}`]}>
                       <Input
                         id={`qty-${it.key}`}
                         type="number"
