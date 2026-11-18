@@ -118,6 +118,29 @@ região atendida, horário de funcionamento, logotipo e segmento.
 
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
+## Marketplace (PRD oficial: RJ, pagamento híbrido, logística opcional)
+
+O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante; 3) prestador no marketplace;
+4) anúncios, propostas e contratação; 5) pagamento direto e pelo app; 6) logística; 7) painel administrativo.
+
+### Marketplace — Etapa 1 (perfis, administração e municípios)
+- `user_roles`: uma conta pode ter vários perfis — `anunciante`, `prestador`, `entregador`, `admin` — com situação
+  `ativo`, `pendente` ou `suspenso`. Quem é dono ou funcionário de lavanderia vira `prestador` automaticamente.
+  Entregador começa `pendente` e só vale depois da aprovação do admin. Ninguém se dá o perfil de admin pelo app:
+  ele é concedido direto no banco (`insert into public.user_roles (user_id, role) ...`).
+- `/comecar`: conta nova escolhe "Quero contratar", "Ofereço serviços" (vai para o assistente de sempre) ou
+  "Faço entregas". `/conta`: perfis da conta, o que cada um já permite e "Acrescentar perfil".
+  O menu da conta (canto superior) leva a Minha conta, Minha lavanderia e Administração.
+- `states` / `municipalities`: os 92 municípios do RJ com código IBGE (lidos de servicodados.ibge.gov.br), situação
+  `cadastrado` (aceita cadastros, não aparece como atendido), `ativo` ou `suspenso`. Leitura pública.
+  `businesses` e `customers` ganham `municipality_id`, calculado pela cidade/UF (com ou sem acento);
+  `businesses.provider_type` (autônomo ou empresa) vem da "situação" respondida no assistente.
+- `/admin` (só perfil admin): resumo, busca e filtro dos municípios, mudança de situação, e aprovação/suspensão de
+  entregadores. Funções `admin_municipality_overview`, `admin_set_municipality_status`, `admin_list_role`,
+  `admin_set_role_status` checam `has_role('admin')` no banco.
+
+
+
 ## Em produção
 
 - **Site:** https://limpa-aqui-ls6290918-7294.vercel.app (projeto `limpa-aqui` na Vercel)
@@ -145,6 +168,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    8. `20261124000008_fotos_pedido.sql`
    9. `20261125000009_calculadoras.sql`
    10. `20261126000010_equipe.sql`
+   11. `20261127000011_perfis_geografia.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -222,7 +246,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **84 de 84 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 47 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **92 de 92 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 8 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

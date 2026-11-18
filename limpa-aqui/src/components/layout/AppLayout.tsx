@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ChevronDown,
   LayoutDashboard,
+  ShieldCheck,
+  Store,
+  UserRound,
   LogOut,
   Menu,
   Settings,
@@ -12,6 +15,7 @@ import {
 import { Badge, Logo, cn } from "@/components/shared/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useRoles } from "@/contexts/RolesContext";
 import { FEATURE_META, LEGACY_SOON, MENU_FEATURES, featureIcon } from "@/lib/featureMeta";
 import { logoUrl } from "@/lib/logo";
 
@@ -79,8 +83,11 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function UserMenu() {
+/** Menu da conta: troca de perfil (conta, lavanderia, administração) e sair. */
+export function UserMenu() {
   const { user, signOut } = useAuth();
+  const { business } = useBusiness();
+  const { hasRole } = useRoles();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const name = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
@@ -116,6 +123,20 @@ function UserMenu() {
       {open && (
         <div role="menu" className="absolute right-0 mt-2 w-56 rounded-xl border border-grafite/10 bg-white p-1.5 shadow-card">
           <div className="truncate px-3 py-2 text-xs text-grafite-500">{user?.email}</div>
+          <Link role="menuitem" to="/conta" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+            <UserRound className="h-4 w-4" aria-hidden /> Minha conta e perfis
+          </Link>
+          {business && (
+            <Link role="menuitem" to="/app" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+              <Store className="h-4 w-4" aria-hidden /> Minha lavanderia
+            </Link>
+          )}
+          {hasRole("admin") && (
+            <Link role="menuitem" to="/admin" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+              <ShieldCheck className="h-4 w-4" aria-hidden /> Administração
+            </Link>
+          )}
+          <div className="my-1 border-t border-grafite/5" />
           <button
             role="menuitem"
             onClick={() => void signOut()}

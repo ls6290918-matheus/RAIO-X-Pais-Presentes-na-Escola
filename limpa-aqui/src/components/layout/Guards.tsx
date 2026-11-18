@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useRoles, type UserRole } from "@/contexts/RolesContext";
 import { Card, EmptyState, FullScreenLoader, buttonClass } from "@/components/shared/ui";
 import { Link } from "react-router-dom";
 import { PowerOff } from "lucide-react";
@@ -16,11 +17,28 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Exige lavanderia cadastrada. Sem lavanderia → /onboarding. */
+/**
+ * Exige lavanderia cadastrada. Sem lavanderia, leva para o lugar certo:
+ * convite pendente → convite; conta sem perfil → /comecar; prestador → /onboarding; os demais → /conta.
+ */
 export function RequireBusiness({ children }: { children: ReactNode }) {
   const { business, loading } = useBusiness();
+  const { roles, loading: rolesLoading, hasRole } = useRoles();
+  if (loading || (!business && rolesLoading)) return <FullScreenLoader />;
+  if (!business) {
+    const invite = pendingInvite();
+    if (invite) return <Navigate to={`/convite/${invite}`} replace />;
+    if (roles.length === 0) return <Navigate to="/comecar" replace />;
+    return <Navigate to={hasRole("prestador") ? "/onboarding" : "/conta"} replace />;
+  }
+  return <>{children}</>;
+}
+
+/** Telas de um perfil da plataforma (ex.: administração). Sem o perfil ativo → /conta. */
+export function RequireRole({ role, children }: { role: UserRole; children: ReactNode }) {
+  const { loading, hasRole } = useRoles();
   if (loading) return <FullScreenLoader />;
-  if (!business) return <Navigate to="/onboarding" replace />;
+  if (!hasRole(role)) return <Navigate to="/conta" replace />;
   return <>{children}</>;
 }
 
