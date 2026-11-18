@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Plus, Search, Sparkles, Store, Trash2, Truck, UserPlus, X } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, PackageOpen, Search, Sparkles, Store, Truck, UserPlus, X } from "lucide-react";
 import {
   Alert,
   Button,
@@ -11,7 +11,6 @@ import {
   Input,
   Modal,
   PageHeader,
-  Select,
   Textarea,
   buttonClass,
   cn,
@@ -19,17 +18,14 @@ import {
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
-import { addDaysISO, formatBRL, maskPhone, moneyInput, parseMoney, searchTerm, todayISO } from "@/lib/format";
+import { addDaysISO, formatBRL, maskPhone, searchTerm, todayISO } from "@/lib/format";
 import type { Customer, DeliveryType, Service } from "@/lib/types";
 import { formatAddress, hasAddress } from "@/lib/maps";
-import { priceLabel, unitShort } from "@/lib/pricing";
 import { CUSTOMER_COLUMNS, CustomerForm } from "@/features/customers/CustomerForm";
 import { SERVICE_COLUMNS } from "@/features/services/ServicesPage";
 
-type ItemDraft = { key: number; serviceId: string; description: string; quantity: string; price: string };
-
-let nextKey = 1;
-const emptyItem = (): ItemDraft => ({ key: nextKey++, serviceId: "", description: "", quantity: "1", price: "" });
+import { ItemsEditor } from "./ItemsEditor";
+import { type ItemDraft, emptyItem, itemsPayload, itemsTotal, validateItems } from "./itemFields";
 
 /* ------------------------------------------------------------ Escolha do cliente */
 function CustomerPicker({
@@ -133,7 +129,8 @@ function CustomerPicker({
 
 /* ------------------------------------------------------------ Página */
 export default function NewOrderPage() {
-  const { business, settings, role } = useBusiness();
+  const { business, settings, role, hasFeature } = useBusiness();
+  const canQuote = hasFeature("orcamento");
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const today = todayISO(settings?.timezone);
@@ -146,6 +143,7 @@ export default function NewOrderPage() {
   const [notes, setNotes] = useState("");
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("retirada");
   const [editingCustomer, setEditingCustomer] = useState(false);
+  const [asQuote, setAsQuote] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -190,27 +188,13 @@ export default function NewOrderPage() {
     if (!dueTouched) setDueDate(suggestedDue);
   }, [suggestedDue, dueTouched]);
 
-  const total = items.reduce((sum, it) => {
-    const p = parseMoney(it.price);
-    const q = Number(it.quantity);
-    return sum + (Number.isNaN(p) || !Number.isInteger(q) ? 0 : p * q);
-  }, 0);
-
-  const updateItem = (key: number, patch: Partial<ItemDraft>) =>
-    setItems((list) => list.map((it) => (it.key === key ? { ...it, ...patch } : it)));
+  const total = itemsTotal(items);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!customer) errs.customer = "Escolha ou cadastre o cliente.";
-    items.forEach((it) => {
-      if (!it.serviceId) errs[`service-${it.key}`] = "Escolha o serviço.";
-      const q = Number(it.quantity);
-      if (!Number.isInteger(q) || q < 1 || q > 50) errs[`qty-${it.key}`] = "De 1 a 50.";
-      const p = parseMoney(it.price);
-      if (Number.isNaN(p) || p > 99999) errs[`price-${it.key}`] = "Valor inválido.";
-      if (it.description.length > 160) errs[`desc-${it.key}`] = "Máximo de 160 caracteres.";
-    });
+    Object.assign(errs, validateItems(items, serviceById));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) errs.dueDate = "Informe a data de entrega.";
     else if (dueDate < today) errs.dueDate = "A entrega não pode ser antes de hoje.";
     if (notes.length > 1000) errs.notes = "Máximo de 1000 caracteres.";
@@ -221,15 +205,11 @@ export default function NewOrderPage() {
     setSaving(true);
     const { data, error: err } = await supabase.rpc("create_order", {
       p_customer_id: customer!.id,
-      p_items: items.map((it) => ({
-        service_id: it.serviceId,
-        description: it.description.trim() || null,
-        quantity: Number(it.quantity),
-        unit_price: parseMoney(it.price),
-      })),
+      p_items: itemsPayload(items),
       p_due_date: dueDate,
       p_notes: notes.trim() || null,
       p_delivery_type: deliveryType,
+      p_as_quote: canQuote && asQuote,
     });
     setSaving(false);
     if (err) return setError(friendlyError(err));
@@ -271,9 +251,37 @@ export default function NewOrderPage() {
           <ArrowLeft className="h-4 w-4" aria-hidden /> Pedidos
         </Link>
         <div className="mt-2">
-          <PageHeader title="Novo pedido" description="Registre os calçados que o cliente deixou." />
+          <PageHeader
+            title={asQuote ? "Novo orçamento" : "Novo pedido"}
+            description={asQuote ? "Monte o orçamento; ele vira pedido quando o cliente aprovar." : "Registre os itens que o cliente deixou."}
+          />
         </div>
       </div>
+
+      {canQuote && (
+        <div className="grid max-w-md grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo">
+          {(
+            [
+              { v: false, label: "Pedido", icon: PackageOpen },
+              { v: true, label: "Orçamento", icon: FileText },
+            ] as const
+          ).map(({ v, label, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              role="radio"
+              aria-checked={asQuote === v}
+              onClick={() => setAsQuote(v)}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition",
+                asQuote === v ? "border-agua bg-agua-50 text-petroleo" : "border-grafite/15 bg-white text-grafite hover:bg-nevoa",
+              )}
+            >
+              <Icon className="h-4 w-4" aria-hidden /> {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <Alert>{error}</Alert>}
 
@@ -291,79 +299,7 @@ export default function NewOrderPage() {
 
           <Card className="p-6">
             <h2 className="mb-4 text-base font-semibold text-petroleo">Itens</h2>
-            <ul className="space-y-4">
-              {items.map((it, i) => (
-                <li key={it.key} className="rounded-xl border border-grafite/10 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-grafite-500">Item {i + 1}</span>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setItems((list) => list.filter((x) => x.key !== it.key))}
-                        className="rounded-lg p-1.5 text-grafite-500 hover:bg-red-50 hover:text-red-600"
-                        aria-label={`Remover item ${i + 1}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label="Serviço" htmlFor={`service-${it.key}`} error={errors[`service-${it.key}`]}>
-                      <Select
-                        id={`service-${it.key}`}
-                        value={it.serviceId}
-                        invalid={!!errors[`service-${it.key}`]}
-                        onChange={(e) => {
-                          const s = serviceById.get(e.target.value);
-                          updateItem(it.key, { serviceId: e.target.value, price: s ? moneyInput(s.price) : "" });
-                        }}
-                      >
-                        <option value="">Escolha</option>
-                        {services.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} — {priceLabel(s.price, s.pricing_unit)}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
-                    <Field label="Calçado (opcional)" htmlFor={`desc-${it.key}`} error={errors[`desc-${it.key}`]}>
-                      <Input
-                        id={`desc-${it.key}`}
-                        placeholder="Ex.: Nike Air Force branco"
-                        value={it.description}
-                        onChange={(e) => updateItem(it.key, { description: e.target.value })}
-                        invalid={!!errors[`desc-${it.key}`]}
-                      />
-                    </Field>
-                    <Field label={`Quantidade${serviceById.get(it.serviceId) ? ` (${unitShort(serviceById.get(it.serviceId)!.pricing_unit)})` : ""}`} htmlFor={`qty-${it.key}`} error={errors[`qty-${it.key}`]}>
-                      <Input
-                        id={`qty-${it.key}`}
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={it.quantity}
-                        onChange={(e) => updateItem(it.key, { quantity: e.target.value })}
-                        invalid={!!errors[`qty-${it.key}`]}
-                      />
-                    </Field>
-                    <Field label="Valor unitário (R$)" htmlFor={`price-${it.key}`} error={errors[`price-${it.key}`]}>
-                      <Input
-                        id={`price-${it.key}`}
-                        inputMode="decimal"
-                        value={it.price}
-                        onChange={(e) => updateItem(it.key, { price: e.target.value })}
-                        invalid={!!errors[`price-${it.key}`]}
-                      />
-                    </Field>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {items.length < 30 && (
-              <Button type="button" variant="outline" className="mt-4" onClick={() => setItems((list) => [...list, emptyItem()])}>
-                <Plus className="h-4 w-4" aria-hidden /> Adicionar item
-              </Button>
-            )}
+            <ItemsEditor items={items} setItems={setItems} services={services} errors={errors} />
           </Card>
         </div>
 
@@ -438,7 +374,7 @@ export default function NewOrderPage() {
             <span className={cn("text-2xl font-semibold tracking-tight text-petroleo")}>{formatBRL(total)}</span>
           </div>
           <Button type="submit" block loading={saving}>
-            Criar pedido
+            {asQuote ? "Criar orçamento" : "Criar pedido"}
           </Button>
         </Card>
       </div>

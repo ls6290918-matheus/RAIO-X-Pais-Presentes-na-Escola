@@ -27,7 +27,7 @@ export type Service = {
   pricing_unit: PricingUnit;
 };
 
-export type OrderStatus = "recebido" | "em_lavagem" | "pronto" | "entregue" | "cancelado";
+export type OrderStatus = "orcamento" | "recebido" | "em_lavagem" | "pronto" | "entregue" | "cancelado";
 
 export type DeliveryType = "retirada" | "entrega";
 
@@ -53,6 +53,7 @@ export type OrderItem = {
   id: string;
   service_id: string | null;
   service_name: string;
+  attributes: Record<string, unknown> | null;
   description: string | null;
   quantity: number;
   unit_price: number;

@@ -81,6 +81,15 @@ região atendida, horário de funcionamento, logotipo e segmento.
 - **Serviços**: categoria, forma de cobrança (unidade, par, peça, kg, conjunto, m², sob orçamento) e sugestões das
   categorias atendidas para adicionar com um clique, sempre sem preço sugerido.
 
+### Onboarding dinâmico — Etapa 4 (ficha por categoria e orçamentos)
+- **Ficha do item** conforme a categoria do serviço (só se o recurso estiver ligado): calçado (marca, modelo, cor,
+  numeração), bolsa/mochila (marca, modelo, cor), roupas (tipo de peça, cor), cortinas e estofados (medidas em cm,
+  lugares, tecido). Fica em `order_items.attributes`, limpa e validada no banco (`clean_item_attributes`).
+- **Quantidade por forma de cobrança**: kg e m² aceitam decimais (2,5 kg); par, peça e unidade só inteiros.
+- **Orçamento**: status `orcamento` antes de `recebido`. Dá para ajustar itens e valores (`update_quote_items`),
+  mandar pelo WhatsApp com os itens e aprovar ("vira pedido", recebido na data da aprovação) ou recusar.
+- **Configurações** agora editam também e-mail, região atendida, horário de funcionamento e logotipo.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -106,6 +115,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    4. `20261120000004_onboarding_dinamico.sql`
    5. `20261121000005_logos_storage.sql`
    6. `20261122000006_restaurar_recursos.sql`
+   7. `20261123000007_pedidos_por_categoria.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -183,7 +193,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **57 de 57 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 20 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **63 de 63 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 26 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

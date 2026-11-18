@@ -2,6 +2,7 @@ import type { OrderStatus } from "@/lib/types";
 import { formatBRL } from "@/lib/format";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
+  orcamento: "Orçamento",
   recebido: "Recebido",
   em_lavagem: "Em lavagem",
   pronto: "Pronto",
@@ -10,6 +11,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export const STATUS_STYLE: Record<OrderStatus, string> = {
+  orcamento: "bg-violet-50 text-violet-700",
   recebido: "bg-sky-50 text-sky-700",
   em_lavagem: "bg-amber-50 text-amber-700",
   pronto: "bg-agua-50 text-petroleo",
@@ -21,6 +23,7 @@ export const OPEN_STATUSES: OrderStatus[] = ["recebido", "em_lavagem", "pronto"]
 
 /** Próximos passos oferecidos na tela (espelha set_order_status no banco). */
 export const NEXT_STEPS: Record<OrderStatus, Array<{ to: OrderStatus; label: string; primary?: boolean }>> = {
+  orcamento: [{ to: "recebido", label: "Cliente aprovou: virar pedido", primary: true }],
   recebido: [
     { to: "em_lavagem", label: "Iniciar lavagem", primary: true },
     { to: "pronto", label: "Marcar como pronto" },
@@ -37,7 +40,7 @@ export const NEXT_STEPS: Record<OrderStatus, Array<{ to: OrderStatus; label: str
   cancelado: [],
 };
 
-export const canCancel = (s: OrderStatus) => OPEN_STATUSES.includes(s);
+export const canCancel = (s: OrderStatus) => s === "orcamento" || OPEN_STATUSES.includes(s);
 
 /** Mensagem pronta para o WhatsApp do cliente, conforme o status. */
 export function whatsappMessage(opts: {
@@ -49,11 +52,21 @@ export function whatsappMessage(opts: {
   paid: boolean;
   dueDate: string;
   delivery?: boolean;
+  /** Linhas dos itens (usadas no orçamento) */
+  itemLines?: string[];
 }) {
   const first = opts.customerName.trim().split(/\s+/)[0];
   const pedido = `pedido #${opts.number}`;
   const valor = opts.paid ? "" : ` Valor: ${formatBRL(opts.total)}.`;
   switch (opts.status) {
+    case "orcamento":
+      return (
+        `Olá, ${first}! Segue o orçamento #${opts.number} da ${opts.businessName}:\n` +
+        (opts.itemLines ?? []).map((l) => `• ${l.replace(/ — R\$ 0,00$/, "")}`).join("\n") +
+        (opts.total > 0
+          ? `\nTotal: ${formatBRL(opts.total)}. Prazo estimado: ${opts.dueDate}.\nPodemos confirmar?`
+          : `\nValores a confirmar após a avaliação. Prazo estimado: ${opts.dueDate}.`)
+      );
     case "recebido":
       return `Olá, ${first}! Recebemos o seu ${pedido} na ${opts.businessName}. Previsão de entrega: ${opts.dueDate}.${valor}`;
     case "em_lavagem":

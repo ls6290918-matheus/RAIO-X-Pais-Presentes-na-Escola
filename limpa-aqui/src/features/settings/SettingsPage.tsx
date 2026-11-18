@@ -8,6 +8,8 @@ import { friendlyError } from "@/lib/errors";
 import { PUBLIC_DOMAIN, maskPhone, onlyDigits } from "@/lib/format";
 import { fieldErrors } from "@/features/auth/schemas";
 import { CategoriesFeaturesCard } from "./CategoriesFeaturesCard";
+import { HoursEditor, LogoPicker } from "@/features/onboarding/IdentityStep";
+import type { OpeningHours } from "@/features/onboarding/catalog";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome da lavanderia.").max(80, "Nome muito longo."),
@@ -19,6 +21,12 @@ const schema = z.object({
     .string()
     .transform(onlyDigits)
     .refine((d) => d.length === 0 || d.length === 10 || d.length === 11, "Telefone inválido."),
+  email: z
+    .string()
+    .trim()
+    .max(160, "E-mail muito longo.")
+    .refine((v) => v === "" || z.string().email().safeParse(v).success, "E-mail inválido."),
+  serviceRegion: z.string().trim().max(160, "Máximo de 160 caracteres."),
   defaultDueDays: z.coerce
     .number({ invalid_type_error: "Informe um número." })
     .int("Use um número inteiro.")
@@ -33,9 +41,13 @@ export default function SettingsPage() {
     name: "",
     whatsapp: "",
     phone: "",
+    email: "",
+    serviceRegion: "",
     defaultDueDays: "3",
   });
   const [address, setAddress] = useState(() => toAddressForm(null));
+  const [hours, setHours] = useState<OpeningHours | null>(null);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,9 +58,13 @@ export default function SettingsPage() {
       name: business.name,
       whatsapp: maskPhone(business.whatsapp ?? ""),
       phone: maskPhone(business.phone ?? ""),
+      email: business.email ?? "",
+      serviceRegion: business.service_region ?? "",
       defaultDueDays: String(settings?.default_due_days ?? 3),
     });
     setAddress(toAddressForm(business));
+    setHours((business.opening_hours as OpeningHours | null) ?? null);
+    setLogoPath(business.logo_path);
   }, [business, settings]);
 
   async function onSubmit(e: FormEvent) {
@@ -71,6 +87,10 @@ export default function SettingsPage() {
         whatsapp: d.whatsapp,
         phone: d.phone || null,
         ...fromAddressForm(address),
+        email: d.email || null,
+        service_region: d.serviceRegion || null,
+        opening_hours: hours,
+        logo_path: logoPath,
       })
       .eq("id", business.id);
 
@@ -102,6 +122,7 @@ export default function SettingsPage() {
 
           <fieldset disabled={!isOwner || saving} className="space-y-5">
             <legend className="text-base font-semibold text-petroleo">Dados da lavanderia</legend>
+            <LogoPicker path={logoPath} onChange={setLogoPath} disabled={!isOwner || saving} />
             <Field label="Nome da lavanderia" htmlFor="name" error={errors.name}>
               <Input id="name" value={form.name} onChange={set("name")} invalid={!!errors.name} />
             </Field>
@@ -131,10 +152,20 @@ export default function SettingsPage() {
               </Field>
             </div>
 
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="E-mail (opcional)" htmlFor="email" error={errors.email}>
+                <Input id="email" type="email" value={form.email} onChange={set("email")} invalid={!!errors.email} />
+              </Field>
+              <Field label="Região atendida (opcional)" htmlFor="serviceRegion" error={errors.serviceRegion}>
+                <Input id="serviceRegion" placeholder="Ex.: Zona Leste" value={form.serviceRegion} onChange={set("serviceRegion")} invalid={!!errors.serviceRegion} />
+              </Field>
+            </div>
+
             <div className="space-y-2 pt-1">
               <p className="text-sm font-medium text-grafite">Endereço</p>
               <AddressFields value={address} onChange={setAddress} errors={errors} disabled={!isOwner || saving} />
             </div>
+            <HoursEditor value={hours} onChange={setHours} disabled={!isOwner || saving} />
           </fieldset>
 
           <hr className="border-grafite/10" />

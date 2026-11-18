@@ -17,6 +17,7 @@ type Row = Pick<Order, "id" | "number" | "status" | "due_date" | "total" | "paid
 const FILTERS: Array<{ key: string; label: string; statuses: OrderStatus[] | null }> = [
   { key: "abertos", label: "Em aberto", statuses: OPEN_STATUSES },
   { key: "prontos", label: "Prontos", statuses: ["pronto"] },
+  { key: "orcamentos", label: "Orçamentos", statuses: ["orcamento"] },
   { key: "entregues", label: "Entregues", statuses: ["entregue"] },
   { key: "cancelados", label: "Cancelados", statuses: ["cancelado"] },
   { key: "todos", label: "Todos", statuses: null },

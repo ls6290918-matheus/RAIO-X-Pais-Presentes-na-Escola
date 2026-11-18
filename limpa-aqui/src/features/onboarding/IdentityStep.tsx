@@ -99,12 +99,7 @@ export function IdentityStep({
   setSlugStatus: (s: SlugStatus) => void;
   errors: Record<string, string>;
 }) {
-  const { user } = useAuth();
   const [slugTouched, setSlugTouched] = useState(Boolean(draft.slug));
-  const [uploading, setUploading] = useState(false);
-  const [logoError, setLogoError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const hours = draft.opening_hours ?? DEFAULT_HOURS;
 
   // Endereço público sugerido a partir do nome, até a pessoa editar
   useEffect(() => {
@@ -133,21 +128,6 @@ export function IdentityStep({
     };
   }, [draft.slug, needsSlug, setSlugStatus]);
 
-  async function onLogo(file: File | undefined) {
-    if (!file || !user) return;
-    setLogoError(null);
-    setUploading(true);
-    try {
-      const path = await uploadLogo(file, user.id);
-      setDraft({ logo_path: path });
-    } catch (e) {
-      setLogoError((e as Error).message);
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
   const slugIcon =
     slugStatus === "checking" ? (
       <Loader2 className="h-4 w-4 animate-spin text-grafite-500" aria-hidden />
@@ -157,37 +137,9 @@ export function IdentityStep({
       <X className="h-4 w-4 text-red-600" aria-hidden />
     ) : null;
 
-  const logo = logoUrl(draft.logo_path);
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-grafite/15 bg-nevoa text-grafite-500 transition hover:border-agua"
-          aria-label={logo ? "Trocar logotipo" : "Enviar logotipo"}
-        >
-          {uploading ? (
-            <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
-          ) : logo ? (
-            <img src={logo} alt="Logotipo" className="h-full w-full object-cover" />
-          ) : (
-            <ImagePlus className="h-6 w-6" aria-hidden />
-          )}
-        </button>
-        <div className="min-w-0 text-sm">
-          <p className="font-medium text-grafite">Logotipo (opcional)</p>
-          <p className="text-xs text-grafite-500">PNG, JPG ou WebP. Pode enviar depois.</p>
-          {logo && (
-            <button type="button" onClick={() => setDraft({ logo_path: null })} className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-red-600">
-              <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remover
-            </button>
-          )}
-          {logoError && <p className="mt-1 text-xs font-medium text-red-600">{logoError}</p>}
-        </div>
-        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => void onLogo(e.target.files?.[0])} />
-      </div>
+      <LogoPicker path={draft.logo_path ?? null} onChange={(path) => setDraft({ logo_path: path })} />
 
       <Field label="Nome do negócio" htmlFor="name" error={errors.name}>
         <Input id="name" placeholder="Ex.: Lavanderia da Ana" value={draft.name ?? ""} onChange={(e) => setDraft({ name: e.target.value })} invalid={!!errors.name} />
@@ -275,14 +227,7 @@ export function IdentityStep({
         <Input id="service_region" value={draft.service_region ?? ""} onChange={(e) => setDraft({ service_region: e.target.value })} invalid={!!errors.service_region} />
       </Field>
 
-      <fieldset>
-        <legend className="text-sm font-medium text-grafite">Horário de funcionamento (opcional)</legend>
-        <div className="mt-1 divide-y divide-grafite/5">
-          {HOUR_ROWS.map((r) => (
-            <HoursRow key={r.key} label={r.label} value={hours[r.key]} onChange={(v) => setDraft({ opening_hours: { ...hours, [r.key]: v } })} />
-          ))}
-        </div>
-      </fieldset>
+      <HoursEditor value={draft.opening_hours ?? null} onChange={(h) => setDraft({ opening_hours: h })} />
     </div>
   );
 }
@@ -301,3 +246,80 @@ export const addressFromDraft = (d: Draft) =>
     lng: d.lng ?? null,
     place_id: d.place_id ?? null,
   });
+
+/** Horário de funcionamento: segunda a sexta, sábado e domingo. */
+export function HoursEditor({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: OpeningHours | null;
+  onChange: (h: OpeningHours) => void;
+  disabled?: boolean;
+}) {
+  const hours = value ?? DEFAULT_HOURS;
+  return (
+    <fieldset disabled={disabled}>
+      <legend className="text-sm font-medium text-grafite">Horário de funcionamento (opcional)</legend>
+      <div className="mt-1 divide-y divide-grafite/5">
+        {HOUR_ROWS.map((r) => (
+          <HoursRow key={r.key} label={r.label} value={hours[r.key]} onChange={(v) => onChange({ ...hours, [r.key]: v })} />
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/** Logotipo: envia para o Storage (pasta do usuário) e devolve o caminho. */
+export function LogoPicker({ path, onChange, disabled }: { path: string | null; onChange: (path: string | null) => void; disabled?: boolean }) {
+  const { user } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const logo = logoUrl(path);
+
+  async function onLogo(file: File | undefined) {
+    if (!file || !user) return;
+    setLogoError(null);
+    setUploading(true);
+    try {
+      onChange(await uploadLogo(file, user.id));
+    } catch (e) {
+      setLogoError((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => fileRef.current?.click()}
+        className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-grafite/15 bg-nevoa text-grafite-500 transition hover:border-agua disabled:cursor-not-allowed"
+        aria-label={logo ? "Trocar logotipo" : "Enviar logotipo"}
+      >
+        {uploading ? (
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+        ) : logo ? (
+          <img src={logo} alt="Logotipo" className="h-full w-full object-cover" />
+        ) : (
+          <ImagePlus className="h-6 w-6" aria-hidden />
+        )}
+      </button>
+      <div className="min-w-0 text-sm">
+        <p className="font-medium text-grafite">Logotipo (opcional)</p>
+        <p className="text-xs text-grafite-500">PNG, JPG ou WebP. Pode enviar depois.</p>
+        {logo && !disabled && (
+          <button type="button" onClick={() => onChange(null)} className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-red-600">
+            <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remover
+          </button>
+        )}
+        {logoError && <p className="mt-1 text-xs font-medium text-red-600">{logoError}</p>}
+      </div>
+      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => void onLogo(e.target.files?.[0])} />
+    </div>
+  );
+}
