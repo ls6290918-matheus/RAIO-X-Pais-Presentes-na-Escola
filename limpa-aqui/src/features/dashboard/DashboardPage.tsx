@@ -139,6 +139,7 @@ export default function DashboardPage() {
   const { business, settings, role, features, segmentModules, configured, hasFeature } = useBusiness();
   const location = useLocation();
   const justOnboarded = Boolean((location.state as { onboarded?: boolean } | null)?.onboarded);
+  const justJoined = Boolean((location.state as { joined?: boolean } | null)?.joined);
   const firstName = String(user?.user_metadata?.full_name ?? "").split(" ")[0];
   const today = todayISO(settings?.timezone);
   const segment = business?.segment ?? null;
@@ -383,6 +384,7 @@ export default function DashboardPage() {
       </div>
 
       {justOnboarded && <Alert kind="success">Pronto! Seu painel foi configurado de acordo com as suas respostas.</Alert>}
+      {justJoined && <Alert kind="success">Bem-vindo(a) à equipe da {business?.name}! Você já pode cuidar dos pedidos e clientes.</Alert>}
 
       {needsSetup && (
         <Card className="flex flex-col gap-4 bg-petroleo p-5 text-white sm:flex-row sm:items-center">

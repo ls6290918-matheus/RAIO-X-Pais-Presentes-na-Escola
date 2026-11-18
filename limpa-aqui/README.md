@@ -105,6 +105,17 @@ região atendida, horário de funcionamento, logotipo e segmento.
   serviço (pedidos já criados não mudam). As contas estão em `src/features/calculators/calc.ts`.
 - Tudo é apresentado como estimativa feita com os números do próprio usuário, sem promessa de lucro.
 
+### Onboarding dinâmico — Etapa 7 (equipe)
+- `/app/equipe` (recurso `equipe`, só o dono): gera um **link de convite** (código secreto de 64 caracteres, vale 7
+  dias, uso único, até 20 pendentes) para mandar pelo WhatsApp ou copiar; lista quem tem acesso (nome, e-mail, papel)
+  e os convites (aguardando, aceito, expirado, cancelado). O dono pode cancelar convites e remover funcionários.
+- `/convite/<código>`: quem abre vê só o nome da lavanderia. Sem conta, cria ou entra e volta ao convite (o código
+  fica guardado no navegador, inclusive depois de confirmar o e-mail); ao aceitar vira **funcionário** e cai no painel
+  da lavanderia, sem passar pelo cadastro de lavanderia. Quem já pertence a uma lavanderia não aceita.
+- Funcionários usam pedidos, clientes, serviços (só leitura de preços) e entregas; Equipe e Configurações de preços
+  ficam com o dono. Tabela `team_invites` (RLS: só o dono lê; escrita só pelas funções `create_invite`,
+  `accept_invite`, `revoke_invite`, `remove_member`; `get_invite` mostra ao visitante só nome e situação).
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -133,6 +144,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    7. `20261123000007_pedidos_por_categoria.sql`
    8. `20261124000008_fotos_pedido.sql`
    9. `20261125000009_calculadoras.sql`
+   10. `20261126000010_equipe.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -210,7 +222,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **76 de 76 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 39 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **84 de 84 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 47 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

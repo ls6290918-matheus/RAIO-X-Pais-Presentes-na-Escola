@@ -18,6 +18,8 @@ import NewOrderPage from "@/features/orders/NewOrderPage";
 import OrderDetailPage from "@/features/orders/OrderDetailPage";
 import RoutesPage from "@/features/routes/RoutesPage";
 import CalculatorsPage from "@/features/calculators/CalculatorsPage";
+import TeamPage from "@/features/team/TeamPage";
+import InvitePage from "@/features/team/InvitePage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -36,6 +38,7 @@ export default function App() {
             <Route path="/cadastro" element={<GuestOnly><SignupPage /></GuestOnly>} />
             <Route path="/recuperar-senha" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
             <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+            <Route path="/convite/:token" element={<InvitePage />} />
 
             <Route
               path="/onboarding"
@@ -77,6 +80,7 @@ export default function App() {
               <Route path="pedidos/:id" element={<RequireFeature code="pedidos"><OrderDetailPage /></RequireFeature>} />
               <Route path="rotas" element={<RequireFeature code="entregas"><RoutesPage /></RequireFeature>} />
               <Route path="calculadoras" element={<RequireFeature code="calculadoras"><CalculatorsPage /></RequireFeature>} />
+              <Route path="equipe" element={<RequireOwner><RequireFeature code="equipe"><TeamPage /></RequireFeature></RequireOwner>} />
               <Route path="clientes" element={<RequireFeature code="clientes"><CustomersPage /></RequireFeature>} />
               <Route path="servicos" element={<RequireFeature code="servicos"><ServicesPage /></RequireFeature>} />
               <Route path="configuracoes" element={<SettingsPage />} />

@@ -5,6 +5,7 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import { Card, EmptyState, FullScreenLoader, buttonClass } from "@/components/shared/ui";
 import { Link } from "react-router-dom";
 import { PowerOff } from "lucide-react";
+import { pendingInvite } from "@/lib/invite";
 
 /** Exige sessão. Sem sessão → /login. */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -28,6 +29,9 @@ export function RequireNoBusiness({ children }: { children: ReactNode }) {
   const { business, loading } = useBusiness();
   if (loading) return <FullScreenLoader />;
   if (business) return <Navigate to="/app" replace />;
+  // Quem abriu um link de convite antes de entrar volta para o convite, não para o cadastro de lavanderia
+  const invite = pendingInvite();
+  if (invite) return <Navigate to={`/convite/${invite}`} replace />;
   return <>{children}</>;
 }
 

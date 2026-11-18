@@ -23,11 +23,13 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
  * Lavanderia ainda não configurada pelo assistente vê o menu de antes.
  */
 function useNav(): NavItem[] {
-  const { features, configured, hasFeature } = useBusiness();
+  const { features, configured, hasFeature, role } = useBusiness();
   const items: NavItem[] = [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }];
   for (const code of MENU_FEATURES) {
     const f = features.find((x) => x.code === code);
     if (!f) continue;
+    // Equipe é só do dono
+    if (code === "equipe" && role !== "owner") continue;
     const label = FEATURE_META[code]?.menuLabel ?? f.name;
     if (f.status === "disponivel" && f.route) {
       if (hasFeature(code)) items.push({ to: f.route, label, icon: featureIcon(code) });
