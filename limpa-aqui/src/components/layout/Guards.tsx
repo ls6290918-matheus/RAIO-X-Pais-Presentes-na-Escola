@@ -36,3 +36,11 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   if (session && !recovering) return <Navigate to="/app" replace />;
   return <>{children}</>;
 }
+
+/** Telas só do dono da lavanderia (ex.: personalizar o painel). Funcionário volta para o painel. */
+export function RequireOwner({ children }: { children: ReactNode }) {
+  const { role, loading } = useBusiness();
+  if (loading) return <FullScreenLoader />;
+  if (role !== "owner") return <Navigate to="/app" replace />;
+  return <>{children}</>;
+}

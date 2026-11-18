@@ -59,6 +59,15 @@ lavanderia, grava a identidade e aplica as regras), `apply_business_rules` (idem
 `category_code` e `pricing_unit` (unidade, par, peça, kg, conjunto, m², orçamento); `businesses` ganhou e-mail,
 região atendida, horário de funcionamento, logotipo e segmento.
 
+### Onboarding dinâmico — Etapa 2 (assistente)
+- `/onboarding` (quem ainda não tem lavanderia) e `/personalizar` (dono de lavanderia já cadastrada; convite no painel).
+- 6 telas: situação, serviços (com serviços personalizados), atendimento, negócio hoje (pode pular), identidade
+  (nome, endereço da página, WhatsApp, e-mail, endereço com Google, região, horário e logotipo) e resumo com a prévia do
+  que será ativado, calculada pelas mesmas regras do banco.
+- Salva sozinho 1 s depois de cada alteração e a cada Avançar/Voltar; ao recarregar, volta na mesma etapa.
+- Logotipos no bucket público `logos` do Supabase Storage (migration `20261121000005_logos_storage.sql`): cada usuário
+  só grava na própria pasta; a imagem é reduzida para 512 px em WebP no navegador.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -82,6 +91,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    2. `20261118000002_etapa2_operacao.sql`
    3. `20261119000003_etapa2b_enderecos.sql`
    4. `20261120000004_onboarding_dinamico.sql`
+   5. `20261121000005_logos_storage.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.

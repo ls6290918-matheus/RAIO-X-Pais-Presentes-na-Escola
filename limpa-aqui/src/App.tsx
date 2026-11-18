@@ -2,13 +2,13 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { BusinessProvider } from "@/contexts/BusinessContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { GuestOnly, RequireAuth, RequireBusiness, RequireNoBusiness } from "@/components/layout/Guards";
+import { GuestOnly, RequireAuth, RequireBusiness, RequireNoBusiness, RequireOwner } from "@/components/layout/Guards";
 import { supabaseConfigured } from "@/lib/supabase";
 import LoginPage from "@/features/auth/LoginPage";
 import SignupPage from "@/features/auth/SignupPage";
 import ForgotPasswordPage from "@/features/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/features/auth/ResetPasswordPage";
-import OnboardingPage from "@/features/onboarding/OnboardingPage";
+import OnboardingWizard from "@/features/onboarding/OnboardingWizard";
 import DashboardPage from "@/features/dashboard/DashboardPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import CustomersPage from "@/features/customers/CustomersPage";
@@ -41,8 +41,21 @@ export default function App() {
               element={
                 <RequireAuth>
                   <RequireNoBusiness>
-                    <OnboardingPage />
+                    <OnboardingWizard mode="criar" />
                   </RequireNoBusiness>
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/personalizar"
+              element={
+                <RequireAuth>
+                  <RequireBusiness>
+                    <RequireOwner>
+                      <OnboardingWizard mode="personalizar" />
+                    </RequireOwner>
+                  </RequireBusiness>
                 </RequireAuth>
               }
             />

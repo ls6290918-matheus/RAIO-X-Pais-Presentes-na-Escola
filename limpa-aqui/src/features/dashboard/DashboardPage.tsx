@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarClock,
@@ -12,9 +12,10 @@ import {
   Receipt,
   Sparkles,
   UserPlus,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
-import { Card, StatCard, cn } from "@/components/shared/ui";
+import { Alert, Card, StatCard, buttonClass, cn } from "@/components/shared/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
@@ -57,7 +58,22 @@ function greeting() {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { business, settings } = useBusiness();
+  const { business, settings, role } = useBusiness();
+  const location = useLocation();
+  const justOnboarded = Boolean((location.state as { onboarded?: boolean } | null)?.onboarded);
+  // Lavanderias cadastradas antes do assistente recebem o convite para personalizar o painel
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  useEffect(() => {
+    if (!business || role !== "owner") return;
+    void supabase
+      .from("onboarding_profiles")
+      .select("user_id")
+      .eq("business_id", business.id)
+      .not("completed_at", "is", null)
+      .limit(1)
+      .then(({ data, error }) => setNeedsSetup(!error && (data ?? []).length === 0));
+  }, [business, role]);
   const firstName = String(user?.user_metadata?.full_name ?? "").split(" ")[0];
   const [stats, setStats] = useState<Stats | null>(null);
   const today = todayISO(settings?.timezone);
@@ -117,6 +133,23 @@ export default function DashboardPage() {
         </h1>
         <p className="mt-1 text-sm text-grafite-500">Este é o painel da {business?.name}.</p>
       </div>
+
+      {justOnboarded && <Alert kind="success">Pronto! Seu painel foi configurado de acordo com as suas respostas.</Alert>}
+
+      {needsSetup && (
+        <Card className="flex flex-col gap-4 bg-petroleo p-5 text-white sm:flex-row sm:items-center">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-agua text-petroleo">
+            <Wand2 className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Personalize seu painel</p>
+            <p className="text-sm text-white/75">Responda algumas perguntas rápidas e o Limpa Aqui se ajusta aos serviços que você oferece.</p>
+          </div>
+          <Link to="/personalizar" className={cn(buttonClass(), "shrink-0")}>
+            Começar
+          </Link>
+        </Card>
+      )}
 
       <section aria-labelledby="atalhos" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <h2 id="atalhos" className="sr-only">
