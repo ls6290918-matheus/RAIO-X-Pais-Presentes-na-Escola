@@ -25,7 +25,18 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
-## Como colocar no ar
+## Em produção
+
+- **Site:** https://limpa-aqui-ls6290918-7294.vercel.app (projeto `limpa-aqui` na Vercel)
+- **Banco:** projeto Supabase "Limpa aqui _ Supabase" (`uiokoaqzyhuyzrqpoqkl`), com as migrations das Etapas 1 e 2 aplicadas.
+- As variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estão gravadas no projeto da Vercel.
+- **Como a publicação funciona hoje:** a Vercel não está ligada ao GitHub. O deploy envia um `build.sh` curto que baixa
+  este repositório num commit fixo (`codeload.github.com/.../tar.gz/<commit>`), roda `npm ci && npm run build` em
+  `limpa-aqui/` e publica `dist/`. Para publicar uma versão nova, faça um novo deploy trocando o commit.
+  Para deploy automático a cada push, instale o app da Vercel no GitHub (github.com/apps/vercel) e ligue o
+  repositório ao projeto com *Root Directory* = `limpa-aqui`.
+
+## Como colocar no ar (do zero)
 
 ### 1. Criar o projeto no Supabase
 
