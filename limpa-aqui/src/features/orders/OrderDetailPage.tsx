@@ -9,6 +9,7 @@ import { formatBRL, formatDateTime, formatDay, maskPhone, todayISO, whatsappLink
 import type { DeliveryType, Order, OrderItem, OrderStatus, Service } from "@/lib/types";
 import { SERVICE_COLUMNS } from "@/features/services/ServicesPage";
 import { ItemsEditor } from "./ItemsEditor";
+import { OrderPhotos } from "./OrderPhotos";
 import { type ItemDraft, draftsFromItems, formatAttributes, formatQty, itemsPayload, itemsTotal, validateItems } from "./itemFields";
 import { type Address, ADDRESS_COLUMNS, formatAddress, hasAddress, mapsLink } from "@/lib/maps";
 import { NEXT_STEPS, OPEN_STATUSES, canCancel, whatsappMessage } from "./status";
@@ -26,7 +27,7 @@ const DETAIL_COLUMNS =
 export default function OrderDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-  const { business, settings } = useBusiness();
+  const { business, settings, hasFeature } = useBusiness();
   const [order, setOrder] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(
@@ -244,6 +245,8 @@ export default function OrderDetailPage() {
               <span className="text-xl font-semibold tracking-tight text-petroleo">{formatBRL(order.total)}</span>
             </div>
           </Card>
+
+          {hasFeature("fotos") && business && <OrderPhotos businessId={business.id} orderId={order.id} />}
 
           <Card className="space-y-4 p-6">
             <h2 className="text-base font-semibold text-petroleo">Entrega e observações</h2>

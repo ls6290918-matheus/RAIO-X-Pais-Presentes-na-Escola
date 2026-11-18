@@ -90,6 +90,12 @@ região atendida, horário de funcionamento, logotipo e segmento.
   mandar pelo WhatsApp com os itens e aprovar ("vira pedido", recebido na data da aprovação) ou recusar.
 - **Configurações** agora editam também e-mail, região atendida, horário de funcionamento e logotipo.
 
+### Onboarding dinâmico — Etapa 5 (fotos de antes e depois)
+- Fotos no pedido, separadas em **Antes** e **Depois** (até 12 por pedido), com visualização em tela cheia.
+- No celular o botão abre a câmera ou a galeria; a foto é reduzida no navegador (máx. 1600 px, JPEG) antes do envio.
+- Arquivos no bucket **privado** `order-photos`, em `<empresa>/<pedido>/<arquivo>`: só membros da lavanderia leem,
+  enviam e apagam (políticas no Storage + tabela `order_photos` com RLS); a tela usa links temporários de 1 hora.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
@@ -116,6 +122,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
    5. `20261121000005_logos_storage.sql`
    6. `20261122000006_restaurar_recursos.sql`
    7. `20261123000007_pedidos_por_categoria.sql`
+   8. `20261124000008_fotos_pedido.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -193,7 +200,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **63 de 63 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 26 do onboarding dinâmico), incluindo isolamento
+Resultado da última execução: **70 de 70 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços e 33 do onboarding dinâmico), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 
