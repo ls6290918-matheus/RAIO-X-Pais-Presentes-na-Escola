@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { Check, Loader2, Store, X } from "lucide-react";
-import { Alert, Button, Card, Field, Input, Logo, Select } from "@/components/shared/ui";
+import { Alert, Button, Card, Field, Input, Logo } from "@/components/shared/ui";
+import { AddressFields, fromAddressForm, toAddressForm, validateAddress } from "@/components/shared/AddressFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
-import { PUBLIC_DOMAIN, UFS, maskPhone, onlyDigits, slugify } from "@/lib/format";
+import { PUBLIC_DOMAIN, maskPhone, onlyDigits, slugify } from "@/lib/format";
 import { fieldErrors } from "@/features/auth/schemas";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]$/;
@@ -22,9 +23,6 @@ const schema = z.object({
     .string()
     .transform(onlyDigits)
     .refine((d) => d.length === 10 || d.length === 11, "Informe o WhatsApp com DDD."),
-  city: z.string().trim().min(2, "Informe a cidade.").max(80),
-  state: z.enum(UFS, { errorMap: () => ({ message: "Selecione o estado." }) }),
-  neighborhood: z.string().trim().max(80).optional(),
 });
 
 type SlugStatus = "idle" | "checking" | "ok" | "invalid" | "reserved" | "taken" | "error";
@@ -41,7 +39,8 @@ export default function OnboardingPage() {
   const { refresh } = useBusiness();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ name: "", slug: "", whatsapp: "", city: "", state: "", neighborhood: "" });
+  const [form, setForm] = useState({ name: "", slug: "", whatsapp: "" });
+  const [address, setAddress] = useState(() => toAddressForm(null));
   const [slugTouched, setSlugTouched] = useState(false);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,23 +74,42 @@ export default function OnboardingPage() {
     e.preventDefault();
     setFormError(null);
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    const addrErrors = validateAddress(address, { requireCity: true });
+    if (!parsed.success || Object.keys(addrErrors).length) {
+      return setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error)), ...addrErrors });
+    }
     if (slugStatus !== "ok") {
       return setErrors({ slug: slugStatus === "checking" ? "Aguarde a verificação do endereço." : slugMessages[slugStatus as keyof typeof slugMessages] ?? "Endereço indisponível." });
     }
     setErrors({});
     setSaving(true);
-    const { error } = await supabase.rpc("create_business", {
+    const a = fromAddressForm(address);
+    const { data: businessId, error } = await supabase.rpc("create_business", {
       p_name: parsed.data.name,
       p_slug: parsed.data.slug,
       p_whatsapp: parsed.data.whatsapp,
-      p_city: parsed.data.city,
-      p_state: parsed.data.state,
-      p_neighborhood: parsed.data.neighborhood || null,
+      p_city: a.city,
+      p_state: a.state,
+      p_neighborhood: a.neighborhood,
     });
     if (error) {
       setSaving(false);
       return setFormError(friendlyError(error));
+    }
+    // Rua, número, CEP e localização no mapa (o dono acabou de ser criado, então pode editar)
+    if (a.street || a.lat != null || a.postal_code) {
+      await supabase
+        .from("businesses")
+        .update({
+          street: a.street,
+          street_number: a.street_number,
+          complement: a.complement,
+          postal_code: a.postal_code,
+          lat: a.lat,
+          lng: a.lng,
+          place_id: a.place_id,
+        })
+        .eq("id", businessId as string);
     }
     await refresh();
     setSaving(false);
@@ -184,25 +202,11 @@ export default function OnboardingPage() {
               />
             </Field>
 
-            <div className="grid gap-5 sm:grid-cols-[1fr_120px]">
-              <Field label="Cidade" htmlFor="city" error={errors.city}>
-                <Input id="city" value={form.city} onChange={set("city")} invalid={!!errors.city} />
-              </Field>
-              <Field label="Estado" htmlFor="state" error={errors.state}>
-                <Select id="state" value={form.state} onChange={set("state")} invalid={!!errors.state}>
-                  <option value="">UF</option>
-                  {UFS.map((uf) => (
-                    <option key={uf} value={uf}>
-                      {uf}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <Field label="Bairro (opcional)" htmlFor="neighborhood" error={errors.neighborhood}>
-              <Input id="neighborhood" value={form.neighborhood} onChange={set("neighborhood")} />
-            </Field>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-grafite">Endereço da lavanderia</legend>
+              <p className="text-xs text-grafite-500">Cidade e estado são obrigatórios. O resto ajuda na rota de entregas e no mapa da sua página.</p>
+              <AddressFields value={address} onChange={setAddress} errors={errors} />
+            </fieldset>
 
             <Button type="submit" block loading={saving}>
               Criar minha lavanderia

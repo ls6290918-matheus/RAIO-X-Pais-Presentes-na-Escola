@@ -48,6 +48,7 @@ export function whatsappMessage(opts: {
   total: number;
   paid: boolean;
   dueDate: string;
+  delivery?: boolean;
 }) {
   const first = opts.customerName.trim().split(/\s+/)[0];
   const pedido = `pedido #${opts.number}`;
@@ -58,7 +59,9 @@ export function whatsappMessage(opts: {
     case "em_lavagem":
       return `Olá, ${first}! O seu ${pedido} já está em lavagem na ${opts.businessName}. Previsão de entrega: ${opts.dueDate}.`;
     case "pronto":
-      return `Olá, ${first}! O seu ${pedido} está pronto para retirada na ${opts.businessName}.${valor}`;
+      return opts.delivery
+        ? `Olá, ${first}! O seu ${pedido} da ${opts.businessName} está pronto e vamos levar até o seu endereço.${valor}`
+        : `Olá, ${first}! O seu ${pedido} está pronto para retirada na ${opts.businessName}.${valor}`;
     case "entregue":
       return `Olá, ${first}! Obrigado por escolher a ${opts.businessName}. Esperamos que tenha gostado do resultado do ${pedido}!`;
     default:

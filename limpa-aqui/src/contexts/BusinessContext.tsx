@@ -1,16 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { ADDRESS_COLUMNS, type Address } from "@/lib/maps";
 
-export type Business = {
+export type Business = Address & {
   id: string;
   name: string;
   slug: string;
   phone: string | null;
   whatsapp: string | null;
-  city: string | null;
-  state: string | null;
-  neighborhood: string | null;
   created_at: string;
 };
 
@@ -47,7 +45,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [fetching, setFetching] = useState(true);
   // Evita redirecionar para o onboarding no instante entre o login e o fim da consulta
   const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
-  const loading = fetching || loadedFor !== userId;
+  // Ao recarregar uma lavanderia já exibida (ex.: depois de salvar), não volta para a tela de carregamento
+  const loading = (fetching && !business) || loadedFor !== userId;
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -89,7 +88,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     const [{ data: b, error: bErr }, { data: s, error: sErr }] = await Promise.all([
       supabase
         .from("businesses")
-        .select("id, name, slug, phone, whatsapp, city, state, neighborhood, created_at")
+        .select(`id, name, slug, phone, whatsapp, created_at, ${ADDRESS_COLUMNS}`)
         .eq("id", member.business_id)
         .single(),
       supabase

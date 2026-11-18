@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   PackageOpen,
+  Route,
   Settings,
   Sparkles,
   Users,
@@ -25,6 +26,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 const NAV: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard },
   { to: "/app/pedidos", label: "Pedidos", icon: PackageOpen },
+  { to: "/app/rotas", label: "Rotas", icon: Route },
   { to: "/app/clientes", label: "Clientes", icon: Users },
   { to: "/app/servicos", label: "Serviços", icon: Sparkles },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet, soon: true },

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Sparkles, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, MapPin, Plus, Search, Sparkles, Store, Trash2, Truck, UserPlus, X } from "lucide-react";
 import {
   Alert,
   Button,
@@ -20,7 +20,8 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { addDaysISO, formatBRL, maskPhone, moneyInput, parseMoney, searchTerm, todayISO } from "@/lib/format";
-import type { Customer, Service } from "@/lib/types";
+import type { Customer, DeliveryType, Service } from "@/lib/types";
+import { formatAddress, hasAddress } from "@/lib/maps";
 import { CUSTOMER_COLUMNS, CustomerForm } from "@/features/customers/CustomerForm";
 import { SERVICE_COLUMNS } from "@/features/services/ServicesPage";
 
@@ -33,9 +34,11 @@ const emptyItem = (): ItemDraft => ({ key: nextKey++, serviceId: "", description
 function CustomerPicker({
   value,
   onChange,
+  wantsAddress,
 }: {
   value: Customer | null;
   onChange: (c: Customer | null) => void;
+  wantsAddress?: boolean;
 }) {
   const { business } = useBusiness();
   const [query, setQuery] = useState("");
@@ -66,6 +69,7 @@ function CustomerPicker({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-petroleo">{value.name}</p>
           <p className="truncate text-xs text-grafite-500">{value.whatsapp ? maskPhone(value.whatsapp) : "Sem WhatsApp"}</p>
+          {value.street && <p className="truncate text-xs text-grafite-500">{formatAddress(value)}</p>}
         </div>
         <button type="button" onClick={() => onChange(null)} className="rounded-lg p-2 text-grafite-500 hover:bg-white" aria-label="Trocar cliente">
           <X className="h-4 w-4" />
@@ -114,6 +118,7 @@ function CustomerPicker({
       <Modal open={creating} title="Novo cliente" onClose={() => setCreating(false)}>
         <CustomerForm
           initialName={/\d/.test(query) ? "" : query.trim()}
+          openAddress={wantsAddress}
           onCancel={() => setCreating(false)}
           onSaved={(c) => {
             setCreating(false);
@@ -138,6 +143,8 @@ export default function NewOrderPage() {
   const [dueDate, setDueDate] = useState("");
   const [dueTouched, setDueTouched] = useState(false);
   const [notes, setNotes] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("retirada");
+  const [editingCustomer, setEditingCustomer] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -221,6 +228,7 @@ export default function NewOrderPage() {
       })),
       p_due_date: dueDate,
       p_notes: notes.trim() || null,
+      p_delivery_type: deliveryType,
     });
     setSaving(false);
     if (err) return setError(friendlyError(err));
@@ -272,7 +280,7 @@ export default function NewOrderPage() {
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="mb-4 text-base font-semibold text-petroleo">Cliente</h2>
-            <CustomerPicker value={customer} onChange={setCustomer} />
+            <CustomerPicker value={customer} onChange={setCustomer} wantsAddress={deliveryType === "entrega"} />
             {errors.customer && (
               <p className="mt-2 text-xs font-medium text-red-600" role="alert">
                 {errors.customer}
@@ -359,6 +367,44 @@ export default function NewOrderPage() {
         </div>
 
         <Card className="space-y-5 p-6 lg:sticky lg:top-24">
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-grafite">Entrega</p>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de entrega">
+              {(
+                [
+                  { v: "retirada", label: "Cliente retira", icon: Store },
+                  { v: "entrega", label: "Entregar", icon: Truck },
+                ] as const
+              ).map(({ v, label, icon: Icon }) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={deliveryType === v}
+                  onClick={() => setDeliveryType(v)}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition",
+                    deliveryType === v ? "border-agua bg-agua-50 text-petroleo" : "border-grafite/15 text-grafite hover:bg-nevoa",
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden /> {label}
+                </button>
+              ))}
+            </div>
+            {deliveryType === "entrega" && customer && !hasAddress(customer) && (
+              <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+                {customer.name.split(" ")[0]} não tem endereço cadastrado.{" "}
+                <button type="button" className="font-semibold underline" onClick={() => setEditingCustomer(true)}>
+                  Adicionar endereço
+                </button>
+              </div>
+            )}
+            {deliveryType === "entrega" && customer && hasAddress(customer) && (
+              <p className="mt-2 flex items-start gap-1.5 text-xs text-grafite-500">
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /> {formatAddress(customer)}
+              </p>
+            )}
+          </div>
           <Field
             label="Data de entrega"
             htmlFor="dueDate"
@@ -395,6 +441,20 @@ export default function NewOrderPage() {
           </Button>
         </Card>
       </div>
+
+      <Modal open={editingCustomer} title="Endereço do cliente" onClose={() => setEditingCustomer(false)}>
+        {customer && (
+          <CustomerForm
+            customer={customer}
+            openAddress
+            onCancel={() => setEditingCustomer(false)}
+            onSaved={(c) => {
+              setCustomer(c);
+              setEditingCustomer(false);
+            }}
+          />
+        )}
+      </Modal>
     </form>
   );
 }

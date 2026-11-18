@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { ChevronDown, MapPin } from "lucide-react";
 import { z } from "zod";
 import { Alert, Button, Field, Input, Textarea } from "@/components/shared/ui";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -6,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { maskPhone, onlyDigits } from "@/lib/format";
 import type { Customer } from "@/lib/types";
+import { ADDRESS_COLUMNS, formatAddress } from "@/lib/maps";
+import { AddressFields, fromAddressForm, toAddressForm, validateAddress } from "@/components/shared/AddressFields";
 import { fieldErrors } from "@/features/auth/schemas";
 
 const schema = z.object({
@@ -22,17 +25,20 @@ const schema = z.object({
   notes: z.string().trim().max(1000, "Máximo de 1000 caracteres."),
 });
 
-export const CUSTOMER_COLUMNS = "id, business_id, name, whatsapp, email, notes, created_at";
+export const CUSTOMER_COLUMNS = `id, business_id, name, whatsapp, email, notes, created_at, ${ADDRESS_COLUMNS}`;
 
 /** Formulário de cliente (novo ou edição). Usado na tela de clientes e no novo pedido. */
 export function CustomerForm({
   customer,
   initialName = "",
+  openAddress = false,
   onSaved,
   onCancel,
 }: {
   customer?: Customer | null;
   initialName?: string;
+  /** Abre a seção de endereço já expandida (ex.: pedido com entrega). */
+  openAddress?: boolean;
   onSaved: (c: Customer) => void;
   onCancel: () => void;
 }) {
@@ -43,6 +49,8 @@ export function CustomerForm({
     email: customer?.email ?? "",
     notes: customer?.notes ?? "",
   });
+  const [address, setAddress] = useState(() => toAddressForm(customer));
+  const [showAddress, setShowAddress] = useState(openAddress || Boolean(customer?.street));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -52,12 +60,22 @@ export function CustomerForm({
     e.stopPropagation();
     if (!business) return;
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    const addrErrors = validateAddress(address);
+    if (!parsed.success || Object.keys(addrErrors).length) {
+      if (Object.keys(addrErrors).length) setShowAddress(true);
+      return setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error)), ...addrErrors });
+    }
     setErrors({});
     setError(null);
     setSaving(true);
     const d = parsed.data;
-    const values = { name: d.name, whatsapp: d.whatsapp || null, email: d.email || null, notes: d.notes || null };
+    const values = {
+      name: d.name,
+      whatsapp: d.whatsapp || null,
+      email: d.email || null,
+      notes: d.notes || null,
+      ...fromAddressForm(address),
+    };
 
     const { data, error: err } = customer
       ? await supabase.from("customers").update(values).eq("id", customer.id).select(CUSTOMER_COLUMNS).single()
@@ -103,6 +121,30 @@ export function CustomerForm({
           invalid={!!errors.email}
         />
       </Field>
+      <div className="rounded-xl border border-grafite/10">
+        <button
+          type="button"
+          onClick={() => setShowAddress((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+          aria-expanded={showAddress}
+        >
+          <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-grafite">
+            <MapPin className="h-4 w-4 shrink-0 text-agua-600" aria-hidden />
+            <span className="truncate">
+              Endereço para coleta e entrega
+              {!showAddress && address.street && (
+                <span className="ml-1 font-normal text-grafite-500">· {formatAddress(fromAddressForm(address))}</span>
+              )}
+            </span>
+          </span>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-grafite-500 transition ${showAddress ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+        {showAddress && (
+          <div className="border-t border-grafite/10 p-4">
+            <AddressFields value={address} onChange={setAddress} errors={errors} idPrefix="c-addr" />
+          </div>
+        )}
+      </div>
       <Field label="Observações (opcional)" htmlFor="c-notes" error={errors.notes}>
         <Textarea
           id="c-notes"

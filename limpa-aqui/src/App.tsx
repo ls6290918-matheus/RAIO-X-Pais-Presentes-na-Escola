@@ -16,6 +16,7 @@ import ServicesPage from "@/features/services/ServicesPage";
 import OrdersPage from "@/features/orders/OrdersPage";
 import NewOrderPage from "@/features/orders/NewOrderPage";
 import OrderDetailPage from "@/features/orders/OrderDetailPage";
+import RoutesPage from "@/features/routes/RoutesPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="pedidos" element={<OrdersPage />} />
               <Route path="pedidos/novo" element={<NewOrderPage />} />
               <Route path="pedidos/:id" element={<OrderDetailPage />} />
+              <Route path="rotas" element={<RoutesPage />} />
               <Route path="clientes" element={<CustomersPage />} />
               <Route path="servicos" element={<ServicesPage />} />
               <Route path="configuracoes" element={<SettingsPage />} />

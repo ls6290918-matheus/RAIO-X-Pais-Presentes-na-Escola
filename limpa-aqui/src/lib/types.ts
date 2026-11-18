@@ -1,4 +1,6 @@
-export type Customer = {
+import type { Address } from "@/lib/maps";
+
+export type Customer = Address & {
   id: string;
   business_id: string;
   name: string;
@@ -20,8 +22,11 @@ export type Service = {
 
 export type OrderStatus = "recebido" | "em_lavagem" | "pronto" | "entregue" | "cancelado";
 
+export type DeliveryType = "retirada" | "entrega";
+
 export type Order = {
   id: string;
+  delivery_type: DeliveryType;
   business_id: string;
   number: number;
   customer_id: string;

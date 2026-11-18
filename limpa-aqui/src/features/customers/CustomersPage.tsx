@@ -95,7 +95,7 @@ export default function CustomersPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-petroleo">{c.name}</p>
                   <p className="truncate text-xs text-grafite-500">
-                    {[c.whatsapp && maskPhone(c.whatsapp), c.email].filter(Boolean).join(" · ") || "Sem contato"}
+                    {[c.whatsapp && maskPhone(c.whatsapp), c.neighborhood, c.email].filter(Boolean).join(" · ") || "Sem contato"}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">

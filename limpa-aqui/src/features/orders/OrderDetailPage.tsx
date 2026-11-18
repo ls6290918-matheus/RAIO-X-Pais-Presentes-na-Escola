@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Circle, MessageCircle, PackageX } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, MapPin, MessageCircle, Navigation, PackageX, Store, Truck } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Textarea, buttonClass, cn } from "@/components/shared/ui";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDateTime, formatDay, maskPhone, todayISO, whatsappLink } from "@/lib/format";
-import type { Order, OrderItem, OrderStatus } from "@/lib/types";
+import type { DeliveryType, Order, OrderItem, OrderStatus } from "@/lib/types";
+import { type Address, ADDRESS_COLUMNS, formatAddress, hasAddress, mapsLink } from "@/lib/maps";
 import { NEXT_STEPS, OPEN_STATUSES, canCancel, whatsappMessage } from "./status";
 import { StatusBadge } from "./StatusBadge";
 
 type Detail = Order & {
-  customers: { id: string; name: string; whatsapp: string | null } | null;
+  customers: ({ id: string; name: string; whatsapp: string | null } & Address) | null;
   order_items: OrderItem[];
 };
 
 const DETAIL_COLUMNS =
-  "id, business_id, number, customer_id, status, due_date, total, paid, notes, received_at, ready_at, delivered_at, canceled_at, created_at, " +
-  "customers(id, name, whatsapp), order_items(id, service_id, service_name, description, quantity, unit_price, position)";
+  "id, business_id, number, customer_id, status, due_date, total, paid, notes, delivery_type, received_at, ready_at, delivered_at, canceled_at, created_at, " +
+  `customers(id, name, whatsapp, ${ADDRESS_COLUMNS}), order_items(id, service_id, service_name, description, quantity, unit_price, position)`;
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -65,7 +66,7 @@ export default function OrderDetailPage() {
     await load();
   }
 
-  async function update(fields: Partial<Pick<Order, "paid" | "due_date" | "notes">>, key: string, success: string) {
+  async function update(fields: Partial<Pick<Order, "paid" | "due_date" | "notes" | "delivery_type">>, key: string, success: string) {
     if (!order) return;
     setBusy(key);
     setMessage(null);
@@ -106,6 +107,7 @@ export default function OrderDetailPage() {
     total: order.total,
     paid: order.paid,
     dueDate: formatDay(order.due_date),
+    delivery: order.delivery_type === "entrega",
   });
 
   const timeline: Array<{ label: string; at: string | null }> =
@@ -234,6 +236,60 @@ export default function OrderDetailPage() {
                 <MessageCircle className="h-4 w-4" aria-hidden /> Avisar no WhatsApp
               </a>
             )}
+            <div className="mt-5 border-t border-grafite/10 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-grafite-500">Entrega</p>
+              <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Tipo de entrega">
+                {(
+                  [
+                    { v: "retirada", label: "Cliente retira", icon: Store },
+                    { v: "entrega", label: "Entregar", icon: Truck },
+                  ] as Array<{ v: DeliveryType; label: string; icon: typeof Store }>
+                ).map(({ v, label, icon: Icon }) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={order.delivery_type === v}
+                    disabled={!isOpen || busy === "delivery"}
+                    onClick={() =>
+                      order.delivery_type !== v &&
+                      void update({ delivery_type: v }, "delivery", v === "entrega" ? "Pedido marcado para entrega." : "Pedido marcado para retirada.")
+                    }
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-medium transition disabled:cursor-not-allowed",
+                      order.delivery_type === v ? "border-agua bg-agua-50 text-petroleo" : "border-grafite/15 text-grafite hover:bg-nevoa",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
+                  </button>
+                ))}
+              </div>
+              {customer && hasAddress(customer) ? (
+                <div className="mt-3">
+                  <p className="flex items-start gap-1.5 text-sm text-grafite">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-agua-600" aria-hidden /> {formatAddress(customer)}
+                  </p>
+                  <a
+                    href={mapsLink(customer)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-petroleo hover:underline"
+                  >
+                    <Navigation className="h-4 w-4" aria-hidden /> Abrir no Maps
+                  </a>
+                </div>
+              ) : (
+                order.delivery_type === "entrega" && (
+                  <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+                    Cliente sem endereço. Cadastre em{" "}
+                    <Link to="/app/clientes" className="font-semibold underline">
+                      Clientes
+                    </Link>
+                    .
+                  </p>
+                )
+              )}
+            </div>
             <Link to={`/app/pedidos/novo?cliente=${order.customer_id}`} className="mt-3 block text-center text-sm font-medium text-petroleo hover:underline">
               Novo pedido para este cliente
             </Link>

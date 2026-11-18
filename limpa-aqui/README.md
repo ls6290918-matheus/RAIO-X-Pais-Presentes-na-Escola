@@ -23,13 +23,28 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
   Botão "Avisar no WhatsApp" com mensagem pronta conforme o status. Marcar como pago, mudar prazo e observações.
 - **Dashboard** com números reais: pedidos em aberto, prontos, para entregar hoje, atrasados e próximas entregas.
 
+### Etapa 2b — Endereços e Google Maps
+- Endereço completo com **busca do Google** (autocompletar) para a lavanderia (onboarding e Configurações) e para os
+  clientes (para coleta e entrega). O endereço escolhido guarda a localização no mapa; tudo pode ser editado à mão.
+- Pedido com **"Cliente retira" ou "Entregar"**; o detalhe do pedido mostra o endereço com "Abrir no Maps" e a mensagem
+  de WhatsApp muda quando o pedido é para entrega.
+- **Rotas**: lista os pedidos prontos para entrega na ordem mais próxima a partir da lavanderia, com mapa, link de rota
+  no Google Maps, botão "A caminho" (WhatsApp) e "Entregue".
+- O mapa da **página pública** usa o mesmo componente (`MapView`) e entra junto com a página pública.
+- Sem `VITE_GOOGLE_MAPS_API_KEY` o app funciona normalmente: os endereços viram campos comuns e o mapa some.
+
+**Chave do Google Maps:** é uma chave de navegador (fica visível no JavaScript do site), então ela **precisa** estar
+restrita no Google Cloud Console: *Application restrictions → Websites* com o domínio do site (`https://SEU-DOMINIO/*`)
+e `http://localhost:8080/*`; *API restrictions* só com **Maps JavaScript API** e **Places API (New)**, ambas ativadas,
+com faturamento ligado no projeto do Google Cloud. Nunca coloque a chave no repositório, só no `.env` e na Vercel.
+
 Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabilitados.
 
 ## Em produção
 
 - **Site:** https://limpa-aqui-ls6290918-7294.vercel.app (projeto `limpa-aqui` na Vercel)
 - **Banco:** projeto Supabase "Limpa aqui _ Supabase" (`uiokoaqzyhuyzrqpoqkl`), com as migrations das Etapas 1 e 2 aplicadas.
-- As variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estão gravadas no projeto da Vercel.
+- As variáveis `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `VITE_GOOGLE_MAPS_API_KEY` estão gravadas no projeto da Vercel.
 - **Como a publicação funciona hoje:** a Vercel não está ligada ao GitHub. O deploy envia um `build.sh` curto que baixa
   este repositório num commit fixo (`codeload.github.com/.../tar.gz/<commit>`), roda `npm ci && npm run build` em
   `limpa-aqui/` e publica `dist/`. Para publicar uma versão nova, faça um novo deploy trocando o commit.
@@ -44,6 +59,7 @@ Financeiro, Agenda e Página pública aparecem no menu como "Em breve", desabili
 2. Abra **SQL Editor** e rode, **nesta ordem**, cada arquivo de `supabase/migrations/` (cole o conteúdo e clique em **Run**):
    1. `20261118000001_etapa1_fundacao.sql`
    2. `20261118000002_etapa2_operacao.sql`
+   3. `20261119000003_etapa2b_enderecos.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -121,7 +137,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **30 de 30 testes passaram** (15 da Etapa 1 e 15 da Etapa 2), incluindo isolamento
+Resultado da última execução: **37 de 37 testes passaram** (15 da Etapa 1, 15 da Etapa 2 e 7 de endereços), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

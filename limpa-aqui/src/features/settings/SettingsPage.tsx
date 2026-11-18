@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Alert, Button, Card, Field, Input, Select } from "@/components/shared/ui";
+import { Alert, Button, Card, Field, Input } from "@/components/shared/ui";
+import { AddressFields, fromAddressForm, toAddressForm, validateAddress } from "@/components/shared/AddressFields";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
-import { PUBLIC_DOMAIN, UFS, maskPhone, onlyDigits } from "@/lib/format";
+import { PUBLIC_DOMAIN, maskPhone, onlyDigits } from "@/lib/format";
 import { fieldErrors } from "@/features/auth/schemas";
 
 const schema = z.object({
@@ -17,9 +18,6 @@ const schema = z.object({
     .string()
     .transform(onlyDigits)
     .refine((d) => d.length === 0 || d.length === 10 || d.length === 11, "Telefone inválido."),
-  city: z.string().trim().min(2, "Informe a cidade.").max(80),
-  state: z.enum(UFS, { errorMap: () => ({ message: "Selecione o estado." }) }),
-  neighborhood: z.string().trim().max(80),
   defaultDueDays: z.coerce
     .number({ invalid_type_error: "Informe um número." })
     .int("Use um número inteiro.")
@@ -34,11 +32,9 @@ export default function SettingsPage() {
     name: "",
     whatsapp: "",
     phone: "",
-    city: "",
-    state: "",
-    neighborhood: "",
     defaultDueDays: "3",
   });
+  const [address, setAddress] = useState(() => toAddressForm(null));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -49,11 +45,9 @@ export default function SettingsPage() {
       name: business.name,
       whatsapp: maskPhone(business.whatsapp ?? ""),
       phone: maskPhone(business.phone ?? ""),
-      city: business.city ?? "",
-      state: business.state ?? "",
-      neighborhood: business.neighborhood ?? "",
       defaultDueDays: String(settings?.default_due_days ?? 3),
     });
+    setAddress(toAddressForm(business));
   }, [business, settings]);
 
   async function onSubmit(e: FormEvent) {
@@ -61,7 +55,10 @@ export default function SettingsPage() {
     if (!business) return;
     setMessage(null);
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    const addrErrors = validateAddress(address, { requireCity: true });
+    if (!parsed.success || Object.keys(addrErrors).length) {
+      return setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error)), ...addrErrors });
+    }
     setErrors({});
     setSaving(true);
     const d = parsed.data;
@@ -72,9 +69,7 @@ export default function SettingsPage() {
         name: d.name,
         whatsapp: d.whatsapp,
         phone: d.phone || null,
-        city: d.city,
-        state: d.state,
-        neighborhood: d.neighborhood || null,
+        ...fromAddressForm(address),
       })
       .eq("id", business.id);
 
@@ -135,23 +130,9 @@ export default function SettingsPage() {
               </Field>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-[1fr_120px_1fr]">
-              <Field label="Cidade" htmlFor="city" error={errors.city}>
-                <Input id="city" value={form.city} onChange={set("city")} invalid={!!errors.city} />
-              </Field>
-              <Field label="Estado" htmlFor="state" error={errors.state}>
-                <Select id="state" value={form.state} onChange={set("state")} invalid={!!errors.state}>
-                  <option value="">UF</option>
-                  {UFS.map((uf) => (
-                    <option key={uf} value={uf}>
-                      {uf}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Bairro" htmlFor="neighborhood" error={errors.neighborhood}>
-                <Input id="neighborhood" value={form.neighborhood} onChange={set("neighborhood")} />
-              </Field>
+            <div className="space-y-2 pt-1">
+              <p className="text-sm font-medium text-grafite">Endereço</p>
+              <AddressFields value={address} onChange={setAddress} errors={errors} disabled={!isOwner || saving} />
             </div>
           </fieldset>
 
