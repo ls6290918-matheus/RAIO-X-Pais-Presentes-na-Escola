@@ -8,15 +8,15 @@ export const TERMS_UPDATED = "19 de novembro de 2026";
 
 export const COMPANY = {
   /** Razão social (ou nome completo do responsável, se pessoa física) */
-  legalName: "",
-  /** CNPJ (ou CPF do responsável) */
-  document: "",
+  legalName: "67.526.683 MATHEUS DOS SANTOS SILVA",
+  /** CNPJ (nunca publique o CPF) */
+  document: "67.526.683/0001-96",
   /** E-mail para dúvidas, suporte e pedidos sobre dados pessoais (LGPD) */
   email: "",
   /** Cidade/UF do foro */
-  forum: "Rio de Janeiro/RJ",
+  forum: "Tanguá/RJ",
 };
 
 export const companyLabel = () =>
-  COMPANY.legalName ? `${COMPANY.legalName}${COMPANY.document ? `, inscrita sob o nº ${COMPANY.document}` : ""}` : "a empresa responsável pelo Limpa Aqui";
+  COMPANY.legalName ? `${COMPANY.legalName}${COMPANY.document ? `, inscrita no CNPJ sob o nº ${COMPANY.document}` : ""}` : "a empresa responsável pelo Limpa Aqui";
 export const contactLabel = () => (COMPANY.email ? COMPANY.email : "os canais de atendimento informados no site");
