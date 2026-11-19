@@ -4,6 +4,7 @@ import { Field, Input, Select, cn } from "@/components/shared/ui";
 import { MapView } from "@/components/shared/MapView";
 import { UFS, onlyDigits } from "@/lib/format";
 import { type Address, emptyAddress, loadPlaces, mapsEnabled } from "@/lib/maps";
+import { lookupCep } from "@/lib/cep";
 
 /** Estado do formulário de endereço (campos de texto + localização). */
 export type AddressForm = {
@@ -239,11 +240,52 @@ export function AddressFields({
   };
   const id = (k: string) => `${idPrefix}-${k}`;
   const located = value.lat != null && value.lng != null;
+  const [cepState, setCepState] = useState<"idle" | "loading" | "notfound" | "error" | "ok">("idle");
+
+  // CEP completo: preenche rua, bairro, cidade e estado pelo ViaCEP (número e complemento ficam com a pessoa)
+  async function onCep(e: { target: { value: string } }) {
+    const masked = maskCep(e.target.value);
+    const next = { ...value, postal_code: masked, lat: null, lng: null, place_id: null };
+    onChange(next);
+    if (onlyDigits(masked).length !== 8 || onlyDigits(masked) === onlyDigits(value.postal_code)) {
+      setCepState("idle");
+      return;
+    }
+    setCepState("loading");
+    try {
+      const r = await lookupCep(masked);
+      if (!r) return setCepState("notfound");
+      onChange({
+        ...next,
+        street: r.street || next.street,
+        neighborhood: r.neighborhood || next.neighborhood,
+        city: r.city || next.city,
+        state: r.state || next.state,
+      });
+      setCepState("ok");
+    } catch {
+      setCepState("error");
+    }
+  }
 
   return (
     <div className="space-y-4">
       {mapsEnabled && <AddressSearch disabled={disabled} onPick={(p) => onChange({ ...value, ...p })} />}
 
+      <div className="sm:w-48">
+        <Field label="CEP" htmlFor={id("cep")} error={errors.postal_code}>
+          <Input id={id("cep")} inputMode="numeric" placeholder="00000-000" value={value.postal_code} onChange={(e) => void onCep(e)} disabled={disabled} invalid={!!errors.postal_code} />
+        </Field>
+      </div>
+      {cepState !== "idle" && (
+        <p className="flex items-center gap-2 text-xs text-grafite-500" role="status" data-testid="cep-status">
+          {cepState === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
+          {cepState === "loading" && "Buscando o CEP..."}
+          {cepState === "ok" && "Endereço preenchido pelo CEP. Confira e informe o número."}
+          {cepState === "notfound" && "CEP não encontrado. Preencha o endereço à mão."}
+          {cepState === "error" && "Não foi possível consultar o CEP agora. Preencha o endereço à mão."}
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
         <Field label="Rua" htmlFor={id("street")} error={errors.street}>
           <Input id={id("street")} value={value.street} onChange={set("street")} disabled={disabled} invalid={!!errors.street} />
@@ -267,7 +309,7 @@ export function AddressFields({
           <Input id={id("neighborhood")} value={value.neighborhood} onChange={set("neighborhood")} disabled={disabled} invalid={!!errors.neighborhood} />
         </Field>
       </div>
-      <div className="grid gap-4 sm:grid-cols-[1fr_110px_140px]">
+      <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
         <Field label="Cidade" htmlFor={id("city")} error={errors.city}>
           <Input id={id("city")} value={value.city} onChange={set("city")} disabled={disabled} invalid={!!errors.city} />
         </Field>
@@ -281,10 +323,8 @@ export function AddressFields({
             ))}
           </Select>
         </Field>
-        <Field label="CEP" htmlFor={id("cep")} error={errors.postal_code}>
-          <Input id={id("cep")} inputMode="numeric" placeholder="00000-000" value={value.postal_code} onChange={set("postal_code")} disabled={disabled} invalid={!!errors.postal_code} />
-        </Field>
       </div>
+
 
       {mapsEnabled && (
         <div>

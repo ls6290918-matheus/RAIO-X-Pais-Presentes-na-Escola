@@ -60,10 +60,12 @@ export default function AccountPage() {
         );
       case "anunciante":
         return (
-          <p className="text-sm text-grafite-500">
-            A busca de prestadores perto de você e os anúncios de serviço chegam nas próximas etapas do marketplace. Seu perfil já está
-            pronto para isso.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="flex-1 text-sm text-grafite-500">Seus dados, endereços e pedidos de serviços contratados.</p>
+            <Link to="/cliente" className={buttonClass()}>
+              Abrir minha área de cliente
+            </Link>
+          </div>
         );
       case "entregador":
         return status === "pendente" ? (

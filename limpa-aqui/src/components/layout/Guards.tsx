@@ -19,7 +19,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 /**
  * Exige lavanderia cadastrada. Sem lavanderia, leva para o lugar certo:
- * convite pendente → convite; conta sem perfil → /comecar; prestador → /onboarding; os demais → /conta.
+ * convite pendente → convite; conta sem perfil → /comecar; prestador → /onboarding; anunciante → /cliente; os demais → /conta.
  */
 export function RequireBusiness({ children }: { children: ReactNode }) {
   const { business, loading } = useBusiness();
@@ -29,7 +29,7 @@ export function RequireBusiness({ children }: { children: ReactNode }) {
     const invite = pendingInvite();
     if (invite) return <Navigate to={`/convite/${invite}`} replace />;
     if (roles.length === 0) return <Navigate to="/comecar" replace />;
-    return <Navigate to={hasRole("prestador") ? "/onboarding" : "/conta"} replace />;
+    return <Navigate to={hasRole("prestador") ? "/onboarding" : hasRole("anunciante") ? "/cliente" : "/conta"} replace />;
   }
   return <>{children}</>;
 }

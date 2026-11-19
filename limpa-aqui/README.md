@@ -139,6 +139,18 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
   entregadores. Funções `admin_municipality_overview`, `admin_set_municipality_status`, `admin_list_role`,
   `admin_set_role_status` checam `has_role('admin')` no banco.
 
+### Marketplace — Etapa 2 (anunciante)
+- `/cliente` (perfil anunciante): nome e WhatsApp (em `profiles`), endereços e "Meus pedidos". "Quero contratar" em
+  `/comecar` leva direto para cá; o aviso "Complete seu cadastro" some quando há WhatsApp e endereço.
+- `user_addresses`: até 10 endereços por conta, um principal (o primeiro; apagar o principal promove outro;
+  `set_default_address`), município calculado pela cidade/UF. Fora do RJ fica sem município e a tela avisa.
+  RLS: cada conta só vê e mexe nos próprios endereços; município, dono e principal não são gravados à mão.
+- **CEP**: em todos os formulários de endereço (lavanderia, clientes, anunciante) o CEP vem primeiro e, completo,
+  preenche rua, bairro, cidade e UF pelo ViaCEP (`src/lib/cep.ts`); número e complemento ficam com a pessoa.
+- `orders.client_user_id` + `my_orders()`: o anunciante vê os próprios pedidos (lavanderia, situação, itens, total,
+  link de WhatsApp da lavanderia), nunca notas internas nem a tabela de pedidos. O vínculo é criado pela
+  contratação no marketplace (Etapa 4).
+
 
 
 ## Em produção
@@ -169,6 +181,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    9. `20261125000009_calculadoras.sql`
    10. `20261126000010_equipe.sql`
    11. `20261127000011_perfis_geografia.sql`
+   12. `20261128000012_anunciante.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -246,7 +259,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **92 de 92 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 8 do marketplace), incluindo isolamento
+Resultado da última execução: **99 de 99 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 15 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

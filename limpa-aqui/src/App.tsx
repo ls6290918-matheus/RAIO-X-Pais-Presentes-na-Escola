@@ -32,6 +32,7 @@ import InvitePage from "@/features/team/InvitePage";
 import StartPage from "@/features/account/StartPage";
 import AccountPage from "@/features/account/AccountPage";
 import AdminPage from "@/features/admin/AdminPage";
+import ClientPage from "@/features/client/ClientPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -89,6 +90,7 @@ export default function App() {
                   </RequireAuth>
                 }
               />
+              <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
               <Route
                 path="/admin"
                 element={

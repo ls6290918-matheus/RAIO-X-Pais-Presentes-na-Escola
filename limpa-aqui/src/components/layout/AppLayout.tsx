@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ChevronDown,
   LayoutDashboard,
+  Search,
   ShieldCheck,
   Store,
   UserRound,
@@ -126,6 +127,11 @@ export function UserMenu() {
           <Link role="menuitem" to="/conta" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
             <UserRound className="h-4 w-4" aria-hidden /> Minha conta e perfis
           </Link>
+          {hasRole("anunciante") && (
+            <Link role="menuitem" to="/cliente" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+              <Search className="h-4 w-4" aria-hidden /> Contratar serviços
+            </Link>
+          )}
           {business && (
             <Link role="menuitem" to="/app" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
               <Store className="h-4 w-4" aria-hidden /> Minha lavanderia
