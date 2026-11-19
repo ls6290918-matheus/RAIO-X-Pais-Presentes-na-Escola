@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, CheckCircle2, MapPin, Search, Store, Truck, Wallet } from "lucide-react";
+import { Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet } from "lucide-react";
+import { AdminDashboard } from "./AdminDashboard";
 import { AdminLogistics } from "./AdminLogistics";
 import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, PageHeader, Select, StatCard, cn } from "@/components/shared/ui";
@@ -30,7 +31,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 /** /admin — administração da plataforma: municípios do RJ e aprovação de entregadores. */
 export default function AdminPage() {
-  const [tab, setTab] = useState<"municipios" | "entregadores" | "logistica" | "financeiro">("municipios");
+  const [tab, setTab] = useState<"painel" | "municipios" | "entregadores" | "logistica" | "financeiro">("painel");
   const [muns, setMuns] = useState<Municipality[] | null>(null);
   const [couriers, setCouriers] = useState<Courier[] | null>(null);
   const [q, setQ] = useState("");
@@ -106,6 +107,7 @@ export default function AdminPage() {
         <div className="flex flex-wrap gap-2" role="tablist">
           {(
             [
+              ["painel", "Painel", LayoutDashboard],
               ["municipios", "Municípios", MapPin],
               ["entregadores", `Entregadores${pending ? ` (${pending})` : ""}`, Bike],
               ["logistica", "Logística", Truck],
@@ -127,7 +129,9 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {tab === "logistica" ? (
+        {tab === "painel" ? (
+          <AdminDashboard />
+        ) : tab === "logistica" ? (
           <AdminLogistics />
         ) : tab === "financeiro" ? (
           <AdminFinance />

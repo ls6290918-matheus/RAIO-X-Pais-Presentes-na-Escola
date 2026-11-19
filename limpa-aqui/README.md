@@ -215,6 +215,23 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - No pagamento direto, o cliente paga cada corrida ao entregador; a conclusão vai para o livro-razão
   (`corrida_criada`, `corrida_concluida`). A lavanderia e o cliente acompanham as corridas no pedido.
 
+### Marketplace — Etapa 7 (painel administrativo)
+- Administração → **Painel** (aba inicial), com filtro de período (7 dias, 30 dias, este mês, mês passado ou datas):
+  - **Pedidos e dinheiro por modalidade** (`admin_dashboard`): pedidos, valor, pagamentos confirmados, valor recebido e
+    cancelados, com "direto (declarado)" e "pelo app" em colunas separadas — o externo nunca é somado ao processado.
+  - **Comissões**: geradas, previstas, a cobrar, pagas e o total a cobrar hoje.
+  - **Logística**: pedidos por tipo de logística, corridas concluídas e valor, fila de corridas, entregadores
+    aprovados e aguardando.
+  - **Cobertura**: municípios cadastrados, com operação ativa, com prestadores na busca, com logística, ativos sem
+    logística e suspensos.
+  - **Marketplace**: clientes, prestadores na busca (autônomos/empresas), anúncios, propostas, pedidos por anúncio/perfil.
+- **Conciliação** (`admin_reconciliation`): pedidos de pagamento direto prontos/entregues (ou com mais de 7 dias) sem
+  confirmação do prestador, e comissões a cobrar agrupadas por prestador.
+- **Repasses a entregadores** (`admin_courier_report`): corridas e valores por entregador no período, com CSV.
+- **Livro-razão** (`admin_ledger`): eventos do período com prestador e pedido, filtro por evento e exportação CSV
+  (separador ";" e acentos corretos no Excel).
+- Repasses automáticos a prestadores e entregadores dependem do pagamento pelo app (Etapa 5b).
+
 
 
 ## Em produção
@@ -250,6 +267,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    14. `20261130000014_contratacao.sql`
    15. `20261201000015_pagamento_direto.sql`
    16. `20261202000016_logistica.sql`
+   17. `20261203000017_painel_admin.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -327,7 +345,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **130 de 130 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 46 do marketplace), incluindo isolamento
+Resultado da última execução: **134 de 134 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 50 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 
