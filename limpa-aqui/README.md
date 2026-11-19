@@ -151,6 +151,20 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
   link de WhatsApp da lavanderia), nunca notas internas nem a tabela de pedidos. O vínculo é criado pela
   contratação no marketplace (Etapa 4).
 
+### Marketplace — Etapa 3 (prestador no marketplace e busca pública)
+- Configurações → **No marketplace** (dono): municípios atendidos (`service_areas`, até 30), "Faço coleta e
+  devolução", pagamento direto (o pagamento pelo app aparece como "em breve"), descrição pública e o interruptor
+  **Aparecer na busca**. Ele só liga pela RPC `set_marketplace_visible`, que exige município do RJ, 1 serviço ativo
+  com preço, 1 área de atendimento e 1 forma de pagamento (`marketplace_requirements` lista o que falta). Mudança
+  direta em `marketplace_visible` ou `accepts_app_payment` é bloqueada pelo gatilho. Lavanderias existentes começam
+  fora da busca.
+- `/buscar` (pública, sem login): município (só os com "Operação ativa" e com prestador visível —
+  `marketplace_municipalities`), serviço e "Usar minha localização"; logado, usa o endereço principal e já escolhe o
+  município. Resultados por distância em linha reta (`distance_km`, Haversine) via `search_providers`.
+- `/p/:slug` (pública): perfil com serviços e preços, municípios atendidos, horário, coleta e pagamento
+  (`get_public_provider`). Rua, número e WhatsApp nunca saem nessas funções. "Contratar" chega na Etapa 4.
+- Visitantes não leem nenhuma tabela: tudo passa por essas funções (inclusive `public_categories`).
+
 
 
 ## Em produção
@@ -182,6 +196,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    10. `20261126000010_equipe.sql`
    11. `20261127000011_perfis_geografia.sql`
    12. `20261128000012_anunciante.sql`
+   13. `20261129000013_marketplace_prestador.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -259,7 +274,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **99 de 99 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 15 do marketplace), incluindo isolamento
+Resultado da última execução: **107 de 107 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 23 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

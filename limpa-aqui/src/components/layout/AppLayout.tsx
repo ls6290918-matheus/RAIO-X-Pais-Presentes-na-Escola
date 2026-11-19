@@ -8,6 +8,7 @@ import {
   Store,
   UserRound,
   LogOut,
+  MapPin,
   Menu,
   Settings,
   X,
@@ -126,6 +127,9 @@ export function UserMenu() {
           <div className="truncate px-3 py-2 text-xs text-grafite-500">{user?.email}</div>
           <Link role="menuitem" to="/conta" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
             <UserRound className="h-4 w-4" aria-hidden /> Minha conta e perfis
+          </Link>
+          <Link role="menuitem" to="/buscar" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+            <MapPin className="h-4 w-4" aria-hidden /> Buscar prestadores
           </Link>
           {hasRole("anunciante") && (
             <Link role="menuitem" to="/cliente" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">

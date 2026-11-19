@@ -33,6 +33,8 @@ import StartPage from "@/features/account/StartPage";
 import AccountPage from "@/features/account/AccountPage";
 import AdminPage from "@/features/admin/AdminPage";
 import ClientPage from "@/features/client/ClientPage";
+import SearchPage from "@/features/marketplace/SearchPage";
+import ProviderPage from "@/features/marketplace/ProviderPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -90,6 +92,8 @@ export default function App() {
                   </RequireAuth>
                 }
               />
+              <Route path="/buscar" element={<SearchPage />} />
+              <Route path="/p/:slug" element={<ProviderPage />} />
               <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
               <Route
                 path="/admin"

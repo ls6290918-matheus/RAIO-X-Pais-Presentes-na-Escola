@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { CheckCircle2, Circle, MapPin, MessageCircle, Package, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
-import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, PageHeader, Select, cn } from "@/components/shared/ui";
+import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, PageHeader, Select, buttonClass, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
 import { AddressFields, type AddressForm, fromAddressForm, toAddressForm, validateAddress } from "@/components/shared/AddressFields";
 import { useAuth } from "@/contexts/AuthContext";
@@ -133,17 +134,17 @@ export default function ClientPage() {
           </Card>
         )}
 
-        <Card className="flex items-start gap-3 p-5">
+        <Card className="flex flex-wrap items-center gap-3 p-5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-agua-50 text-petroleo">
             <Search className="h-5 w-5" aria-hidden />
           </span>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold text-petroleo">Encontrar quem lava</h2>
-            <p className="mt-1 text-sm text-grafite-500">
-              A busca de prestadores perto de você e os anúncios de serviço estão sendo preparados. Com o cadastro completo, você já
-              estará pronto para contratar quando abrirmos na sua cidade.
-            </p>
+            <p className="mt-1 text-sm text-grafite-500">Veja lavanderias e autônomos que atendem a sua cidade, com preços e distância.</p>
           </div>
+          <Link to="/buscar" className={buttonClass()}>
+            Buscar prestadores
+          </Link>
         </Card>
 
         {/* Dados */}

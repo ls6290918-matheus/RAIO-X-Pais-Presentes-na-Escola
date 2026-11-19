@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 import type { RoleStatus } from "@/contexts/RolesContext";
 
 type MunStatus = "cadastrado" | "ativo" | "suspenso";
-type Municipality = { id: number; name: string; status: MunStatus; providers: number; companies: number };
+type Municipality = { id: number; name: string; status: MunStatus; providers: number; companies: number; visible: number };
 type Courier = { user_id: string; full_name: string | null; email: string; status: RoleStatus; created_at: string; updated_at: string };
 
 const MUN_LABEL: Record<MunStatus, string> = { cadastrado: "Só cadastro", ativo: "Operação ativa", suspenso: "Suspenso" };
@@ -28,7 +28,7 @@ export default function AdminPage() {
   const load = useCallback(async () => {
     const [m, c] = await Promise.all([supabase.rpc("admin_municipality_overview"), supabase.rpc("admin_list_role", { p_role: "entregador" })]);
     if (m.error || c.error) setMsg({ kind: "error", text: friendlyError(m.error ?? c.error) });
-    setMuns(((m.data as Municipality[]) ?? []).map((x) => ({ ...x, providers: Number(x.providers), companies: Number(x.companies) })));
+    setMuns(((m.data as Municipality[]) ?? []).map((x) => ({ ...x, providers: Number(x.providers), companies: Number(x.companies), visible: Number(x.visible) })));
     setCouriers((c.data as Courier[]) ?? []);
   }, []);
 
@@ -138,7 +138,7 @@ export default function AdminPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-grafite">{m.name}</p>
                     <p className="text-xs text-grafite-500">
-                      {m.providers} autônomo(s) · {m.companies} empresa(s)
+                      {m.providers} autônomo(s) · {m.companies} empresa(s) · {m.visible} na busca
                     </p>
                   </div>
                   <div className="w-full sm:w-48">
