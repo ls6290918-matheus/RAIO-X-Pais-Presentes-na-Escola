@@ -230,7 +230,43 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - **Repasses a entregadores** (`admin_courier_report`): corridas e valores por entregador no período, com CSV.
 - **Livro-razão** (`admin_ledger`): eventos do período com prestador e pedido, filtro por evento e exportação CSV
   (separador ";" e acentos corretos no Excel).
-- Repasses automáticos a prestadores e entregadores dependem do pagamento pelo app (Etapa 5b).
+- Repasses a prestadores e entregadores do pagamento pelo app ficam em Administração → Pagamentos pelo app (Etapa 5b).
+
+### Marketplace — Etapa 5b (pagamento pelo app: Pix via SyncPay)
+- **Modelo:** todo pagamento pelo app entra na conta SyncPay do Limpa Aqui. A plataforma retém a comissão (regra de
+  comissão da modalidade `app`) e registra o **repasse** devido a cada prestador e entregador; o admin paga pelo Pix do
+  banco e marca como pago. Nada de taxa fixa no código: liga/desliga e valor mínimo ficam em `platform_settings` (admin).
+- **CPF:** o cliente digita o CPF a cada pagamento; ele vai direto para a SyncPay e **não é gravado** (nem no banco,
+  nem nos logs, nem no livro-razão — o CPF que volta nos avisos da SyncPay também é descartado).
+- **Banco** (`20261204000018_pagamento_app.sql`): `payment_transactions` (cobranças; o status só muda pelo gateway),
+  `payment_webhook_events` (deduplicação), `payouts` (repasses: pendente, bloqueado, pago, cancelado),
+  `payout_accounts` (chave Pix de repasse da lavanderia — só o dono — ou do entregador), `platform_settings`.
+  - Pedido pelo app nasce "aguardando pagamento": não avança nem muda de valor até o Pix ser confirmado; com entregador,
+    a corrida de coleta só é criada depois do pagamento. O valor cobrado é serviço + taxas de entrega.
+  - `completed` → pedido pago, comissão retida, repasse ao prestador (total − comissão); corrida concluída → repasse
+    ao entregador. Taxa do gateway (valor bruto − líquido) vai ao livro-razão.
+  - `med`/`refunding` suspendem os repasses; voltando a `completed`, liberam. `refunded`/`chargeback` cancelam pedido,
+    comissão e repasses pendentes; repasse já pago vira "a recuperar" no livro-razão.
+  - Pix pago em duplicidade, de pedido cancelado ou com valor diferente vira **"a devolver"**; o admin estorna pela tela.
+  - Funções que aplicam resultado do gateway só rodam como servidor (`service_role`).
+- **Edge Function `syncpay`** (`supabase/functions/syncpay/`, Deno, sem dependências):
+  - `POST /functions/v1/syncpay` com o login do usuário: `checkout` (gera ou reaproveita o Pix do pedido), `status`
+    ("Já paguei": consulta a SyncPay no máximo 5 vezes por cobrança, a partir de 1 minuto), `refund` (admin).
+  - `POST /functions/v1/syncpay/webhook`: aviso `transaction.updated` com assinatura HMAC (`X-SyncPay-Signature`,
+    janela de 5 minutos, deduplicado por `event_id`). Aviso sem assinatura nunca é confiado: só dispara uma consulta
+    direta à SyncPay. Token de acesso reaproveitado por 1 hora.
+  - Segredos (no Supabase → Edge Functions → Secrets, nunca no código): `SYNCPAY_CLIENT_ID`, `SYNCPAY_CLIENT_SECRET`,
+    `SYNCPAY_WEBHOOK_SECRET`. Publicada com verificação de JWT desligada (o webhook não tem login; as ações do
+    usuário são validadas pelo banco com o token dele).
+- **Telas:** opção "Pelo app, com Pix" ao contratar (perfil e proposta); `/cliente/pagar/:id` com CPF, QR Code,
+  copia e cola, "Já paguei" e atualização automática; "Aguardando Pix" para o prestador (lista e pedido); chave Pix e
+  interruptor "Pagamento pelo app" em Configurações; "Recebimentos pelo app" para o entregador; aba
+  **Pagamentos pelo app** no admin (liga/desliga, repasses com chave Pix, cobranças a devolver com estorno) e bloco
+  "Dinheiro que passa pela plataforma" no Painel.
+- **Para funcionar de verdade** (passos do dono da conta SyncPay): criar a chave de API (Consulta, Venda, Rastreio),
+  gravar os 3 segredos no Supabase, cadastrar o webhook `https://<projeto>.supabase.co/functions/v1/syncpay/webhook`
+  (evento `transaction`) e pedir à SyncPay a liberação de IP (Edge Functions não têm IP fixo). Só então ligar em
+  Administração → Pagamentos pelo app.
 
 
 
@@ -268,6 +304,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    15. `20261201000015_pagamento_direto.sql`
    16. `20261202000016_logistica.sql`
    17. `20261203000017_painel_admin.sql`
+   18. `20261204000018_pagamento_app.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -345,7 +382,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **134 de 134 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 50 do marketplace), incluindo isolamento
+Resultado da última execução: **144 de 144 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 60 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

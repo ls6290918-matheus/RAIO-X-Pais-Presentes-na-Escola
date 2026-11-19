@@ -7,6 +7,7 @@ import { useRoles } from "@/contexts/RolesContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, maskPhone, onlyDigits, whatsappLink } from "@/lib/format";
+import { CourierPayouts } from "./CourierPayouts";
 
 type Vehicle = "bicicleta" | "moto" | "carro";
 type Mun = { id: number; name: string };
@@ -365,6 +366,7 @@ export default function CourierPage() {
             )}
           </>
         )}
+        {profile && !editing && <CourierPayouts />}
       </div>
     </SimpleLayout>
   );

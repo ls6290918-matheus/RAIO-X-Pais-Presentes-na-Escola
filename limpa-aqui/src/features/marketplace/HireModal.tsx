@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL } from "@/lib/format";
 import { priceLabel } from "@/lib/pricing";
-import type { LogisticsMode } from "@/lib/types";
+import type { LogisticsMode, PaymentMode } from "@/lib/types";
 import { HireOptions, type CourierQuote } from "@/features/client/HireOptions";
 import type { PublicProvider } from "./types";
 
@@ -24,6 +24,7 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
   const [addressId, setAddressId] = useState("");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
+  const [payment, setPayment] = useState<PaymentMode>(provider.accepts_direct_payment ? "direto" : "app");
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState<CourierQuote | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -68,16 +69,17 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
     setError(null);
     if (!items.length) return setError("Escolha pelo menos um serviço.");
     setBusy(true);
-    const { error: err } = await supabase.rpc("hire_services", {
+    const { data: orderId, error: err } = await supabase.rpc("hire_services", {
       p_business_id: provider.id,
       p_items: items.map(([service_id, quantity]) => ({ service_id, quantity })),
       p_address_id: addressId,
       p_logistics: logistics,
-      p_payment: "direto",
+      p_payment: payment,
       p_notes: notes.trim() || null,
     });
     setBusy(false);
     if (err) return setError(friendlyError(err));
+    if (payment === "app") return navigate(`/cliente/pagar/${orderId as string}`);
     navigate("/cliente", { state: { success: `Pronto! Seu pedido foi enviado para ${provider.name}. Acompanhe em "Meus pedidos".` } });
   }
 
@@ -139,7 +141,18 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
               ))}
             </Select>
           </Field>
-          <HireOptions courier={quote} pickupAvailable={provider.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
+          <HireOptions
+            courier={quote}
+            pickupAvailable={provider.offers_pickup}
+            logistics={logistics}
+            onLogistics={setLogistics}
+            notes={notes}
+            onNotes={setNotes}
+            payment={payment}
+            onPayment={setPayment}
+            acceptsDirect={provider.accepts_direct_payment}
+            acceptsApp={provider.accepts_app_payment}
+          />
           <div className="flex items-center justify-between rounded-xl bg-petroleo px-4 py-3 text-white">
             <span className="text-sm">Total estimado{logistics === "entregador" && quote?.available ? " (com entregas)" : ""}</span>
             <span className="text-lg font-semibold" data-testid="hire-total">
@@ -151,7 +164,7 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
               Voltar
             </Button>
             <Button loading={busy} disabled={!items.length} onClick={() => void confirm()}>
-              Confirmar contratação
+              {payment === "app" ? "Contratar e pagar com Pix" : "Confirmar contratação"}
             </Button>
           </div>
         </div>

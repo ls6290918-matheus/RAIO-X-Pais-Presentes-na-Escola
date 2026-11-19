@@ -9,6 +9,18 @@ type ModeRow = { mode: "direto" | "app"; orders: number; canceled: number; order
 type Dashboard = {
   by_mode: ModeRow[];
   commissions: { generated: number; expected: number; to_collect: number; paid: number; to_collect_all_time: number };
+  app_payments?: {
+    enabled: boolean;
+    received: number;
+    gateway_fees: number;
+    refunded: number;
+    to_refund: number;
+    to_refund_amount: number;
+    disputed: number;
+    payouts_pending: number;
+    payouts_blocked: number;
+    payouts_paid: number;
+  };
   logistics: {
     orders_with_courier: number;
     orders_by_provider: number;
@@ -231,6 +243,25 @@ export function AdminDashboard() {
         </div>
         <p className="mt-2 text-[11px] text-grafite-500">Pagamento pelo app chega na Etapa 5b: até lá a coluna fica zerada.</p>
       </Section>
+
+      {dash.app_payments && (
+        <Section
+          title="Dinheiro que passa pela plataforma (pagamento pelo app)"
+          description={dash.app_payments.enabled ? "Recebido via Pix no período; repasses e devoluções, agora." : "Pagamento pelo app desligado. Ligue em Pagamentos pelo app."}
+        >
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5" data-testid="app-money">
+            <Tile label="Recebido" value={formatBRL(n(dash.app_payments.received))} />
+            <Tile label="Taxas do gateway" value={formatBRL(n(dash.app_payments.gateway_fees))} />
+            <Tile label="Estornado" value={formatBRL(n(dash.app_payments.refunded))} />
+            <Tile label="Repasses a pagar" value={formatBRL(n(dash.app_payments.payouts_pending))} note={n(dash.app_payments.payouts_blocked) > 0 ? `${formatBRL(n(dash.app_payments.payouts_blocked))} suspensos` : undefined} />
+            <Tile
+              label="A devolver"
+              value={formatBRL(n(dash.app_payments.to_refund_amount))}
+              note={`${n(dash.app_payments.to_refund)} cobrança(s)${n(dash.app_payments.disputed) ? ` · ${n(dash.app_payments.disputed)} em contestação` : ""}`}
+            />
+          </div>
+        </Section>
+      )}
 
       <Section title="Comissões" description="Pedidos do período, pela regra vigente na data de cada pedido.">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">

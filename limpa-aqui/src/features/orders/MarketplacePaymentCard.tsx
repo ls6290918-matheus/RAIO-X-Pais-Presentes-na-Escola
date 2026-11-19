@@ -12,7 +12,18 @@ import type { PaymentMode } from "@/lib/types";
 type Finance = {
   confirmation: { amount: number; method: "pix" | "dinheiro" | "cartao" | "outro"; confirmed_at: string; has_evidence: boolean } | null;
   commission: { amount: number; percent: number; fixed: number; status: "prevista" | "a_cobrar" | "paga" | "cancelada" } | null;
+  app_payment?: { status: string; amount: number; paid_at?: string | null } | null;
+  payout?: { amount: number; status: "pendente" | "bloqueado" | "pago" | "cancelado"; paid_at: string | null } | null;
 };
+
+const APP_STATUS: Record<string, string> = {
+  completed: "Pago pelo app",
+  refunding: "Estorno em andamento",
+  med: "Pagamento contestado no banco (MED)",
+  refunded: "Estornado ao cliente",
+  chargeback: "Contestado pelo cliente",
+};
+const PAYOUT_LABEL = { pendente: "a receber do Limpa Aqui", bloqueado: "suspenso (contestação)", pago: "pago a você", cancelado: "cancelado" } as const;
 
 const METHOD_LABEL = { pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão", outro: "Outro" } as const;
 const COMMISSION_LABEL = { prevista: "prevista", a_cobrar: "a pagar ao Limpa Aqui", paga: "paga", cancelada: "cancelada" } as const;
@@ -63,6 +74,38 @@ export function MarketplacePaymentCard({
   }
 
   const c = fin?.confirmation;
+  if (order.payment_mode === "app") {
+    const ap = fin?.app_payment;
+    const paidApp = ap && ap.status !== "aguardando";
+    return (
+      <Card className="p-6">
+        <h2 className="text-base font-semibold text-petroleo">Pagamento</h2>
+        <p className="mt-1 text-xs text-grafite-500">{PAYMENT_LABEL.app} (Pix) · o Limpa Aqui recebe e repassa a você</p>
+        {!fin ? null : order.status === "cancelado" && !paidApp ? (
+          <p className="mt-3 text-sm text-grafite-500">Pedido cancelado.</p>
+        ) : paidApp ? (
+          <p className="mt-3 flex items-start gap-2 text-sm text-grafite" data-testid="payment-confirmed">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-agua-600" aria-hidden />
+            <span>
+              {APP_STATUS[ap.status] ?? ap.status}: {formatBRL(ap.amount)}
+              {ap.paid_at && ` em ${formatDateTime(ap.paid_at)}`}
+            </span>
+          </p>
+        ) : (
+          <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-800" data-testid="payment-waiting">
+            Aguardando o Pix do cliente ({formatBRL(ap?.amount ?? order.total)}). Não comece o serviço ainda: o pedido libera sozinho quando o pagamento for confirmado.
+          </p>
+        )}
+        {role === "owner" && fin?.payout && (
+          <p className="mt-3 border-t border-grafite/5 pt-3 text-xs text-grafite-500" data-testid="payout-line">
+            Repasse: <strong className="text-grafite">{formatBRL(fin.payout.amount)}</strong> ({PAYOUT_LABEL[fin.payout.status]}
+            {fin.payout.paid_at && ` em ${formatDateTime(fin.payout.paid_at)}`})
+            {fin.commission && ` · comissão do Limpa Aqui ${formatBRL(fin.commission.amount)} já descontada`}
+          </p>
+        )}
+      </Card>
+    );
+  }
   return (
     <Card className="p-6" >
       <h2 className="text-base font-semibold text-petroleo">Pagamento</h2>

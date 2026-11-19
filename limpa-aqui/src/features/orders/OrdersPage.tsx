@@ -10,7 +10,7 @@ import type { Order, OrderStatus } from "@/lib/types";
 import { OPEN_STATUSES } from "./status";
 import { StatusBadge } from "./StatusBadge";
 
-type Row = Pick<Order, "id" | "number" | "status" | "due_date" | "total" | "paid" | "origin"> & {
+type Row = Pick<Order, "id" | "number" | "status" | "due_date" | "total" | "paid" | "origin" | "payment_mode"> & {
   customers: { name: string } | null;
 };
 
@@ -38,7 +38,7 @@ export default function OrdersPage() {
     setError(null);
     let req = supabase
       .from("orders")
-      .select("id, number, status, due_date, total, paid, origin, customers!inner(name)")
+      .select("id, number, status, due_date, total, paid, origin, payment_mode, customers!inner(name)")
       .eq("business_id", business.id)
       .limit(200);
 
@@ -140,6 +140,9 @@ export default function OrdersPage() {
                       <p className="flex items-center gap-2 truncate text-sm font-medium text-grafite">
                         {o.customers?.name}
                         {o.origin === "marketplace" && <span className="shrink-0 rounded-full bg-petroleo px-2 py-0.5 text-[10px] font-semibold text-agua">Limpa Aqui</span>}
+                        {o.payment_mode === "app" && !o.paid && o.status !== "cancelado" && (
+                          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">Aguardando Pix</span>
+                        )}
                       </p>
                       <p className={cn("text-xs", late ? "font-semibold text-red-600" : "text-grafite-500")}>
                         {late ? "Atrasado · " : "Entrega "}

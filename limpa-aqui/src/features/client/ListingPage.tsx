@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate } from "@/lib/format";
 import { logoUrl } from "@/lib/logo";
-import type { LogisticsMode } from "@/lib/types";
+import type { LogisticsMode, PaymentMode } from "@/lib/types";
 import { HireOptions, type CourierQuote } from "./HireOptions";
 
 export type MyListing = {
@@ -50,6 +50,8 @@ export default function ListingPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [choosing, setChoosing] = useState<Proposal | null>(null);
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
+  const [payment, setPayment] = useState<PaymentMode>("direto");
+  const [accepts, setAccepts] = useState<{ direct: boolean; app: boolean } | null>(null);
   const [notes, setNotes] = useState("");
   const [quote, setQuote] = useState<CourierQuote | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -69,9 +71,10 @@ export default function ListingPage() {
     if (!choosing) return;
     setBusy(true);
     setMsg(null);
-    const { error } = await supabase.rpc("accept_proposal", { p_proposal_id: choosing.id, p_logistics: logistics, p_payment: "direto", p_notes: notes.trim() || null });
+    const { data: orderId, error } = await supabase.rpc("accept_proposal", { p_proposal_id: choosing.id, p_logistics: logistics, p_payment: payment, p_notes: notes.trim() || null });
     setBusy(false);
     if (error) return setMsg(friendlyError(error));
+    if (payment === "app") return navigate(`/cliente/pagar/${orderId as string}`);
     navigate("/cliente", { state: { success: `Pronto! Você contratou ${choosing.business_name}. Acompanhe em "Meus pedidos".` } });
   }
 
@@ -170,6 +173,13 @@ export default function ListingPage() {
                           setQuote(undefined);
                           void supabase.rpc("quote_proposal_delivery", { p_proposal_id: p.id }).then(({ data }) => setQuote(((data as CourierQuote[]) ?? [])[0] ?? null));
                           setLogistics(p.offers_pickup && listing.wants_pickup ? "prestador" : "sem_logistica");
+                          setAccepts(null);
+                          void supabase.rpc("get_public_provider", { p_slug: p.business_slug }).then(({ data }) => {
+                            const d = data as { accepts_direct_payment?: boolean; accepts_app_payment?: boolean } | null;
+                            const a = { direct: d?.accepts_direct_payment ?? true, app: d?.accepts_app_payment ?? false };
+                            setAccepts(a);
+                            setPayment(a.direct ? "direto" : "app");
+                          });
                         }}
                       >
                         Aceitar proposta
@@ -196,13 +206,28 @@ export default function ListingPage() {
               <span className="text-grafite">{listing.title}</span>
               <span className="font-semibold text-petroleo">{formatBRL(choosing.price)}</span>
             </div>
-            <HireOptions courier={quote} pickupAvailable={choosing.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
+            {accepts === null ? (
+              <InlineLoader />
+            ) : (
+              <HireOptions
+                courier={quote}
+                pickupAvailable={choosing.offers_pickup}
+                logistics={logistics}
+                onLogistics={setLogistics}
+                notes={notes}
+                onNotes={setNotes}
+                payment={payment}
+                onPayment={setPayment}
+                acceptsDirect={accepts.direct}
+                acceptsApp={accepts.app}
+              />
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setChoosing(null)}>
                 Voltar
               </Button>
-              <Button loading={busy} onClick={() => void accept()}>
-                Confirmar contratação
+              <Button loading={busy} disabled={accepts === null} onClick={() => void accept()}>
+                {payment === "app" ? "Contratar e pagar com Pix" : "Confirmar contratação"}
               </Button>
             </div>
           </div>

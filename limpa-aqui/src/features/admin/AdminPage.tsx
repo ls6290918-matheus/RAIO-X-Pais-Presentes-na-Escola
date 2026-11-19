@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet } from "lucide-react";
+import { Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet, QrCode } from "lucide-react";
 import { AdminDashboard } from "./AdminDashboard";
 import { AdminLogistics } from "./AdminLogistics";
+import { AdminPayments } from "./AdminPayments";
 import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, PageHeader, Select, StatCard, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
@@ -31,7 +32,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 /** /admin — administração da plataforma: municípios do RJ e aprovação de entregadores. */
 export default function AdminPage() {
-  const [tab, setTab] = useState<"painel" | "municipios" | "entregadores" | "logistica" | "financeiro">("painel");
+  const [tab, setTab] = useState<"painel" | "municipios" | "entregadores" | "logistica" | "financeiro" | "pagamentos">("painel");
   const [muns, setMuns] = useState<Municipality[] | null>(null);
   const [couriers, setCouriers] = useState<Courier[] | null>(null);
   const [q, setQ] = useState("");
@@ -112,6 +113,7 @@ export default function AdminPage() {
               ["entregadores", `Entregadores${pending ? ` (${pending})` : ""}`, Bike],
               ["logistica", "Logística", Truck],
               ["financeiro", "Financeiro", Wallet],
+              ["pagamentos", "Pagamentos pelo app", QrCode],
             ] as const
           ).map(([key, label, Icon]) => (
             <button
@@ -135,6 +137,8 @@ export default function AdminPage() {
           <AdminLogistics />
         ) : tab === "financeiro" ? (
           <AdminFinance />
+        ) : tab === "pagamentos" ? (
+          <AdminPayments />
         ) : tab === "municipios" ? (
           <Card className="overflow-hidden">
             <div className="flex flex-col gap-3 p-4 sm:flex-row">

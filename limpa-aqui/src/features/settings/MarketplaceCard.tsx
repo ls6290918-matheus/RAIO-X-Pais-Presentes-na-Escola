@@ -5,6 +5,8 @@ import { Alert, Button, Card, Field, Input, Textarea, cn } from "@/components/sh
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
+import { PixKeyForm } from "@/components/shared/PixKeyForm";
+import { useAppPaymentAvailable } from "@/features/client/HireOptions";
 
 type Municipality = { id: number; name: string };
 type MarketData = {
@@ -50,10 +52,12 @@ export function MarketplaceCard() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [hasPixKey, setHasPixKey] = useState(false);
+  const platformApp = useAppPaymentAvailable();
 
   const load = useCallback(async () => {
     if (!business) return;
-    const [b, a, m, r] = await Promise.all([
+    const [b, a, m, r, k] = await Promise.all([
       supabase
         .from("businesses")
         .select("slug, municipality_id, marketplace_visible, public_description, offers_pickup, accepts_direct_payment, accepts_app_payment")
@@ -62,7 +66,9 @@ export function MarketplaceCard() {
       supabase.from("service_areas").select("municipality_id, municipality:municipalities(id, name)").eq("business_id", business.id).eq("active", true),
       supabase.from("municipalities").select("id, name").eq("state_id", 33).order("name"),
       supabase.rpc("marketplace_requirements", { p_business_id: business.id }),
+      supabase.from("payout_accounts").select("id").eq("business_id", business.id).maybeSingle(),
     ]);
+    setHasPixKey(Boolean(k.data));
     const err = b.error ?? a.error ?? m.error ?? r.error;
     if (err) setMsg({ kind: "error", text: friendlyError(err) });
     const d = b.data as MarketData | null;
@@ -113,6 +119,8 @@ export function MarketplaceCard() {
     run(`a${m.id}`, () => supabase.from("service_areas").delete().eq("business_id", business.id).eq("municipality_id", m.id));
   const setFlag = (col: "offers_pickup" | "accepts_direct_payment", v: boolean) =>
     run(col, () => supabase.from("businesses").update({ [col]: v }).eq("id", business.id));
+  const setApp = (v: boolean) =>
+    run("app", () => supabase.rpc("set_app_payment", { p_business_id: business.id, p_enabled: v }), v ? "Pagamento pelo app ligado." : "Pagamento pelo app desligado.");
   const saveDescription = () =>
     run("desc", () => supabase.from("businesses").update({ public_description: description.trim() || null }).eq("id", business.id), "Descrição salva.");
   const setVisible = (v: boolean) =>
@@ -246,12 +254,28 @@ export function MarketplaceCard() {
             />
             <span className="text-sm text-grafite">Aceito pagamento direto (Pix, dinheiro ou cartão comigo)</span>
           </label>
-          <div className="flex items-center gap-3">
-            <Toggle label="Pagamento pelo app" checked={data.accepts_app_payment} disabled onChange={() => undefined} />
-            <span className="text-sm text-grafite-500">
-              Pagamento pelo app <span className="rounded-full bg-nevoa px-2 py-0.5 text-[11px] font-semibold">Em breve</span>
+          <div className="flex items-start gap-3">
+            <Toggle
+              label="Pagamento pelo app"
+              checked={data.accepts_app_payment}
+              disabled={!isOwner || busy === "app" || (!data.accepts_app_payment && (!platformApp || !hasPixKey))}
+              onChange={(v) => void setApp(v)}
+            />
+            <span className="text-sm text-grafite">
+              Aceito pagamento pelo app (Pix)
+              <span className="block text-xs text-grafite-500">
+                {platformApp === false
+                  ? "Ainda não liberado pela plataforma."
+                  : "O cliente paga pelo Limpa Aqui antes de você começar; a plataforma desconta a comissão e repassa o valor para a sua chave Pix."}
+              </span>
             </span>
           </div>
+          {isOwner && platformApp && (
+            <div className="rounded-xl border border-grafite/10 p-4">
+              <p className="mb-2 text-sm font-semibold text-grafite">Chave Pix para receber os repasses</p>
+              <PixKeyForm businessId={business.id} onSaved={() => void load()} />
+            </div>
+          )}
         </div>
 
         {/* Descrição */}

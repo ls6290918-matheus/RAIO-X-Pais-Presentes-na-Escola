@@ -37,6 +37,7 @@ import SearchPage from "@/features/marketplace/SearchPage";
 import ProviderPage from "@/features/marketplace/ProviderPage";
 import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
 import ListingPage from "@/features/client/ListingPage";
+import PayPage from "@/features/client/PayPage";
 import CourierPage from "@/features/courier/CourierPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
@@ -98,6 +99,7 @@ export default function App() {
               <Route path="/buscar" element={<SearchPage />} />
               <Route path="/p/:slug" element={<ProviderPage />} />
               <Route path="/entregas" element={<RequireAuth><CourierPage /></RequireAuth>} />
+              <Route path="/cliente/pagar/:id" element={<RequireAuth><RequireRole role="anunciante"><PayPage /></RequireRole></RequireAuth>} />
               <Route path="/cliente/anuncios/:id" element={<RequireAuth><RequireRole role="anunciante"><ListingPage /></RequireRole></RequireAuth>} />
               <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
               <Route

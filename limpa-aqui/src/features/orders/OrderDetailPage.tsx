@@ -195,9 +195,13 @@ export default function OrderDetailPage() {
 
       {message && <Alert kind={message.kind}>{message.text}</Alert>}
 
+      {order.payment_mode === "app" && !order.paid && order.status !== "cancelado" && (
+        <Alert>Aguardando o Pix do cliente. O pedido só pode avançar depois que o pagamento for confirmado.</Alert>
+      )}
+
       {(NEXT_STEPS[order.status].length > 0 || canCancel(order.status)) && (
         <Card className="flex flex-wrap items-center gap-2 p-4">
-          {NEXT_STEPS[order.status].map((step) => (
+          {(order.payment_mode === "app" && !order.paid ? [] : NEXT_STEPS[order.status]).map((step) => (
             <Button
               key={step.to}
               variant={step.primary ? "primary" : "outline"}

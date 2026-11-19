@@ -300,7 +300,11 @@ export default function ClientPage() {
                     {o.payment_mode && <span>{PAYMENT_LABEL[o.payment_mode]}</span>}
                     {o.logistics_mode && <span>{LOGISTICS_LABEL[o.logistics_mode]}</span>}
                     {o.paid && <span className="font-semibold text-agua-600">Pagamento confirmado</span>}
-                    {Number(o.delivery_fee_total) > 0 && <span>Entregas: {formatBRL(Number(o.delivery_fee_total))} (pagas ao entregador)</span>}
+                    {Number(o.delivery_fee_total) > 0 && (
+                      <span>
+                        Entregas: {formatBRL(Number(o.delivery_fee_total))} ({o.payment_mode === "app" ? "pagas pelo app" : "pagas ao entregador"})
+                      </span>
+                    )}
                     <span className="font-semibold text-grafite">{formatBRL(o.total)}</span>
                     {o.business_whatsapp && (
                       <a
@@ -313,6 +317,14 @@ export default function ClientPage() {
                       </a>
                     )}
                   </div>
+                  {o.payment_mode === "app" && !o.paid && o.status !== "cancelado" && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 p-3">
+                      <span className="flex-1 text-sm font-semibold text-amber-800">Aguardando pagamento: o pedido começa depois do Pix.</span>
+                      <Link to={`/cliente/pagar/${o.id}`} className={buttonClass("primary")}>
+                        Pagar {formatBRL(Number(o.total) + Number(o.delivery_fee_total ?? 0))} com Pix
+                      </Link>
+                    </div>
+                  )}
                   {o.logistics_mode === "entregador" && (
                     <div className="mt-2 rounded-lg bg-nevoa p-2">
                       <OrderDeliveriesCard orderId={o.id} compact />
