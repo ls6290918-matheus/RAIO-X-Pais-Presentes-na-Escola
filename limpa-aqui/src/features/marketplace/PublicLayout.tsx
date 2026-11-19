@@ -28,6 +28,11 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         )}
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      <footer className="mx-auto flex max-w-5xl flex-wrap gap-x-4 gap-y-1 px-4 pb-8 text-xs text-grafite-500 sm:px-6">
+        <span>© {new Date().getFullYear()} Limpa Aqui</span>
+        <Link to="/termos" className="hover:underline">Termos de Uso</Link>
+        <Link to="/privacidade" className="hover:underline">Política de Privacidade</Link>
+      </footer>
     </div>
   );
 }

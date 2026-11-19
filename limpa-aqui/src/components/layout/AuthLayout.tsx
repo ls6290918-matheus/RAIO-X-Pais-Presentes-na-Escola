@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ClipboardList, Link2, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Logo } from "@/components/shared/ui";
 
 const highlights = [
@@ -45,6 +46,10 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           <h1 className="text-2xl font-semibold tracking-tight text-petroleo">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-grafite-500">{subtitle}</p>}
           <div className="mt-7">{children}</div>
+          <p className="mt-8 flex justify-center gap-4 text-xs text-grafite-500">
+            <Link to="/termos" className="hover:underline">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:underline">Política de Privacidade</Link>
+          </p>
         </div>
       </main>
     </div>

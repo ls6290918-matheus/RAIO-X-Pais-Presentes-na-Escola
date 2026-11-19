@@ -34,6 +34,8 @@ import AccountPage from "@/features/account/AccountPage";
 import AdminPage from "@/features/admin/AdminPage";
 import ClientPage from "@/features/client/ClientPage";
 import SearchPage from "@/features/marketplace/SearchPage";
+import { PrivacyPage, TermsPage } from "@/features/legal/LegalPages";
+import { TermsGate } from "@/features/legal/TermsGate";
 import ProviderPage from "@/features/marketplace/ProviderPage";
 import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
 import ListingPage from "@/features/client/ListingPage";
@@ -51,7 +53,10 @@ export default function App() {
       <AuthProvider>
         <BusinessProvider>
           <RolesProvider>
+            <TermsGate />
             <Routes>
+              <Route path="/termos" element={<TermsPage />} />
+              <Route path="/privacidade" element={<PrivacyPage />} />
               {/* A página institucional da plataforma entra em fase futura */}
               <Route path="/" element={<Navigate to="/app" replace />} />
 

@@ -6,6 +6,7 @@ import { Alert, Button, Field, Input } from "@/components/shared/ui";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { fieldErrors, signupSchema } from "./schemas";
+import { TERMS_VERSION } from "@/lib/legal";
 
 export default function SignupPage() {
   const [form, setForm] = useState({ fullName: "", email: "", password: "", confirm: "" });
@@ -13,6 +14,7 @@ export default function SignupPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
 
   const set = (k: keyof typeof form) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -22,13 +24,14 @@ export default function SignupPage() {
     setFormError(null);
     const parsed = signupSchema.safeParse(form);
     if (!parsed.success) return setErrors(fieldErrors(parsed.error));
+    if (!accepted) return setErrors({ terms: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade." });
     setErrors({});
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
-        data: { full_name: parsed.data.fullName },
+        data: { full_name: parsed.data.fullName, terms_version: TERMS_VERSION },
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
@@ -91,6 +94,23 @@ export default function SignupPage() {
             invalid={!!errors.confirm}
           />
         </Field>
+        <div>
+          <label className="flex items-start gap-3 text-sm text-grafite">
+            <input id="terms" type="checkbox" className="mt-1 accent-agua" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
+            <span>
+              Li e aceito os{" "}
+              <Link to="/termos" target="_blank" className="font-semibold text-petroleo hover:underline">
+                Termos de Uso
+              </Link>{" "}
+              e a{" "}
+              <Link to="/privacidade" target="_blank" className="font-semibold text-petroleo hover:underline">
+                Política de Privacidade
+              </Link>
+              .
+            </span>
+          </label>
+          {errors.terms && <p className="mt-1 text-xs font-medium text-red-600">{errors.terms}</p>}
+        </div>
         <Button type="submit" block loading={loading}>
           Criar conta
         </Button>

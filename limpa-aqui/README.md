@@ -290,6 +290,12 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - **Admin:** assinantes pagantes, MRR, recebido em 30 dias, em tolerância/vencidos, lista de assinaturas, cortesia
   (`admin_grant_plan`, até uma data ou sem fim) e tolerância.
 
+### Termos de Uso e Política de Privacidade
+- Páginas públicas `/termos` e `/privacidade` (texto em `src/features/legal/LegalPages.tsx`; dados da empresa e versão em
+  `src/lib/legal.ts`). Links no rodapé das páginas públicas e do login/cadastro.
+- Cadastro exige marcar "Li e aceito"; a versão aceita e a data ficam em `profiles.terms_version`/`terms_accepted_at`.
+- Contas antigas (ou quando `TERMS_VERSION` muda) veem um aviso único ao entrar e aceitam (`accept_terms`).
+- Os textos são um modelo inicial: revise com um advogado antes da abertura comercial.
 
 ## Em produção
 
@@ -328,6 +334,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    18. `20261204000018_pagamento_app.sql`
    19. `20261205000019_assinaturas.sql`
    20. `20261206000020_syncpay_vault.sql`
+   21. `20261207000021_aceite_termos.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -405,7 +412,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **152 de 152 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 68 do marketplace), incluindo isolamento
+Resultado da última execução: **153 de 153 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace e 1 do aceite dos termos), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 
