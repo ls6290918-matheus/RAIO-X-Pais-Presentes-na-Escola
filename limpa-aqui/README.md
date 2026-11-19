@@ -5,6 +5,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Site institucional** em `/` (`src/features/landing/LandingPage.tsx`): capa, quem somos, serviços (levam à busca já filtrada), como funciona em 4 passos, área para lavanderias e entregadores e rodapé com os dados da empresa. Mostra quantos municípios já têm atendimento real.
+
 ### Etapa 1 — Fundação
 
 - Identidade visual (paleta do PRD, fonte Inter), painel com menu lateral e menu mobile.

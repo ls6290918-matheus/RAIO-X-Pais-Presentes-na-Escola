@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { BusinessProvider } from "@/contexts/BusinessContext";
 import { RolesProvider } from "@/contexts/RolesContext";
@@ -44,6 +44,7 @@ import ClientHome from "@/features/client/ClientHome";
 import ClientOrdersPage from "@/features/client/ClientOrdersPage";
 import PlanPage from "@/features/plan/PlanPage";
 import CourierPage from "@/features/courier/CourierPage";
+import LandingPage from "@/features/landing/LandingPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -59,8 +60,7 @@ export default function App() {
             <Routes>
               <Route path="/termos" element={<TermsPage />} />
               <Route path="/privacidade" element={<PrivacyPage />} />
-              {/* A página institucional da plataforma entra em fase futura */}
-              <Route path="/" element={<Navigate to="/app" replace />} />
+              <Route path="/" element={<LandingPage />} />
 
               <Route
                 path="/login"
