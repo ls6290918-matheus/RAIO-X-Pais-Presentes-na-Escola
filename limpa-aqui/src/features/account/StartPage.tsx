@@ -49,7 +49,7 @@ export default function StartPage() {
     const err = await addRole(c.role);
     setBusy(null);
     if (err) return setError(err);
-    navigate(c.role === "prestador" ? "/onboarding" : c.role === "anunciante" ? "/cliente" : "/conta", { replace: true });
+    navigate(c.role === "prestador" ? "/onboarding" : c.role === "anunciante" ? "/cliente" : "/entregas", { replace: true });
   }
 
   return (

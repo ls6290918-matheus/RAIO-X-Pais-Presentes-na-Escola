@@ -198,6 +198,23 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - **Resumo** (`admin_finance_summary`) separado por modalidade: pagamento direto é "declarado" pelo prestador e nunca
   somado ao que entra pelo app.
 
+### Marketplace — Etapa 6 (logística opcional com entregadores)
+- **Entregador** (`/entregas`): cadastra veículo, só os 4 últimos números do CPF, WhatsApp e municípios onde atende
+  (`couriers`, `courier_areas`, `save_courier_profile`). A aprovação continua sendo do admin (perfil "entregador").
+- **Tarifas por município** (`delivery_zones`, Administração → Logística): taxa base, valor por km, mínimo, fator de
+  rota (ruas não são linha reta) e distância máxima — nada fixo no código. Um município "tem logística" quando tem
+  tarifa ativa e pelo menos 1 entregador aprovado que atende lá (`municipality_has_logistics`).
+- **Cotação antes de confirmar** (`quote_delivery`, `quote_proposal_delivery`): distância em linha reta × fator de
+  rota; corrida = base + km × valor, nunca abaixo do mínimo; o pedido tem 2 corridas (coleta e devolução). Precisa das
+  coordenadas do endereço do cliente (busca do Google no cadastro) e da lavanderia.
+- **Corridas** (`deliveries`, independentes): a coleta nasce com o pedido; a devolução, quando a lavanderia marca
+  "pronto" (gatilho `order_logistics`). Cada uma pode ter um entregador diferente. Antes de aceitar, o entregador vê
+  só bairros, distância e valor (`courier_available_deliveries`); depois de aceitar, endereços completos, WhatsApp e
+  link de rota (`my_deliveries`). Coletei → Entreguei (`advance_delivery`) ou Desistir (`release_delivery`, antes de
+  coletar). Devolução entregue marca o pedido como entregue. Cancelar o pedido cancela as corridas pendentes.
+- No pagamento direto, o cliente paga cada corrida ao entregador; a conclusão vai para o livro-razão
+  (`corrida_criada`, `corrida_concluida`). A lavanderia e o cliente acompanham as corridas no pedido.
+
 
 
 ## Em produção
@@ -232,6 +249,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    13. `20261129000013_marketplace_prestador.sql`
    14. `20261130000014_contratacao.sql`
    15. `20261201000015_pagamento_direto.sql`
+   16. `20261202000016_logistica.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -309,7 +327,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **123 de 123 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 39 do marketplace), incluindo isolamento
+Resultado da última execução: **130 de 130 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 46 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

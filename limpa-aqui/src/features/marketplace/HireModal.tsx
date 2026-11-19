@@ -9,7 +9,7 @@ import { friendlyError } from "@/lib/errors";
 import { formatBRL } from "@/lib/format";
 import { priceLabel } from "@/lib/pricing";
 import type { LogisticsMode } from "@/lib/types";
-import { HireOptions } from "@/features/client/HireOptions";
+import { HireOptions, type CourierQuote } from "@/features/client/HireOptions";
 import type { PublicProvider } from "./types";
 
 type Addr = { id: string; label: string; is_default: boolean; municipality: { name: string } | null };
@@ -25,6 +25,7 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
   const [qty, setQty] = useState<Record<string, number>>({});
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
   const [notes, setNotes] = useState("");
+  const [quote, setQuote] = useState<CourierQuote | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +43,17 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!addressId) return;
+    setQuote(undefined);
+    void supabase.rpc("quote_delivery", { p_business_id: provider.id, p_address_id: addressId }).then(({ data }) => {
+      const q = ((data as CourierQuote[]) ?? [])[0] ?? null;
+      setQuote(q);
+      if (!q?.available && logistics === "entregador") setLogistics("sem_logistica");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressId, provider.id]);
 
   const hireable = provider.services.filter((s) => s.pricing_unit !== "orcamento");
   const quoteOnly = provider.services.filter((s) => s.pricing_unit === "orcamento");
@@ -127,10 +139,12 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
               ))}
             </Select>
           </Field>
-          <HireOptions pickupAvailable={provider.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
+          <HireOptions courier={quote} pickupAvailable={provider.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
           <div className="flex items-center justify-between rounded-xl bg-petroleo px-4 py-3 text-white">
-            <span className="text-sm">Total estimado</span>
-            <span className="text-lg font-semibold" data-testid="hire-total">{formatBRL(total)}</span>
+            <span className="text-sm">Total estimado{logistics === "entregador" && quote?.available ? " (com entregas)" : ""}</span>
+            <span className="text-lg font-semibold" data-testid="hire-total">
+              {formatBRL(total + (logistics === "entregador" && quote?.available ? Number(quote.total) : 0))}
+            </span>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>

@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2, Circle, MapPin, MessageCircle, Navigation, Pac
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, Textarea, buttonClass, cn } from "@/components/shared/ui";
 import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
 import { MarketplacePaymentCard } from "./MarketplacePaymentCard";
+import { OrderDeliveriesCard } from "./OrderDeliveriesCard";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
@@ -363,6 +364,7 @@ export default function OrderDetailPage() {
             </Link>
           </Card>
 
+          {order.logistics_mode === "entregador" && <OrderDeliveriesCard orderId={order.id} refreshKey={order.status} />}
           {order.origin === "marketplace" ? (
             <MarketplacePaymentCard order={order} onChanged={load} />
           ) : (

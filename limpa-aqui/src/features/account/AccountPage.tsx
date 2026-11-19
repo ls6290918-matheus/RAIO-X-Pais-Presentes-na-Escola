@@ -68,10 +68,17 @@ export default function AccountPage() {
           </div>
         );
       case "entregador":
-        return status === "pendente" ? (
-          <p className="text-sm text-grafite-500">Seu cadastro está em análise pela administração. Você será avisado quando for aprovado.</p>
-        ) : (
-          <p className="text-sm text-grafite-500">Cadastro aprovado. As corridas de coleta e devolução chegam na etapa de logística.</p>
+        return (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="flex-1 text-sm text-grafite-500">
+              {status === "pendente"
+                ? "Seu cadastro está em análise pela administração. Complete veículo e municípios em Entregas."
+                : "Cadastro aprovado. Veja as corridas da sua região."}
+            </p>
+            <Link to="/entregas" className={buttonClass()}>
+              Abrir entregas
+            </Link>
+          </div>
         );
       case "admin":
         return (

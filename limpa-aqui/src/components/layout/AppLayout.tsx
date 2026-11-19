@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
+  Bike,
   ChevronDown,
   Inbox,
   LayoutDashboard,
@@ -92,7 +93,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 export function UserMenu() {
   const { user, signOut } = useAuth();
   const { business } = useBusiness();
-  const { hasRole } = useRoles();
+  const { hasRole, statusOf } = useRoles();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const name = (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "";
@@ -137,6 +138,11 @@ export function UserMenu() {
           {hasRole("anunciante") && (
             <Link role="menuitem" to="/cliente" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
               <Search className="h-4 w-4" aria-hidden /> Contratar serviços
+            </Link>
+          )}
+          {statusOf("entregador") && statusOf("entregador") !== "suspenso" && (
+            <Link role="menuitem" to="/entregas" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
+              <Bike className="h-4 w-4" aria-hidden /> Minhas entregas
             </Link>
           )}
           {business && (

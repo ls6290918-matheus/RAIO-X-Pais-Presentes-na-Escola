@@ -1,4 +1,7 @@
 import { Field, Textarea, cn } from "@/components/shared/ui";
+import { formatBRL } from "@/lib/format";
+
+export type CourierQuote = { available: boolean; reason: string | null; distance_km: number | null; fee_per_leg: number | null; total: number | null };
 import type { LogisticsMode } from "@/lib/types";
 
 /** Escolha de logística e pagamento antes de confirmar a contratação (mostrados antes de confirmar, como manda o PRD). */
@@ -8,7 +11,9 @@ export function HireOptions({
   onLogistics,
   notes,
   onNotes,
+  courier,
 }: {
+  courier?: CourierQuote | null;
   pickupAvailable: boolean;
   logistics: LogisticsMode;
   onLogistics: (v: LogisticsMode) => void;
@@ -23,7 +28,18 @@ export function HireOptions({
       text: pickupAvailable ? "Ele vai até o seu endereço buscar e devolver." : "Este prestador não faz coleta.",
       disabled: !pickupAvailable,
     },
-    { v: "entregador", title: "Entregador do Limpa Aqui", text: "Coleta e devolução por entregadores parceiros.", disabled: true, soon: true },
+    courier?.available
+      ? {
+          v: "entregador",
+          title: `Entregador do Limpa Aqui · ${formatBRL(Number(courier.total))}`,
+          text: `Coleta e devolução (${formatBRL(Number(courier.fee_per_leg))} cada, ~${String(courier.distance_km).replace(".", ",")} km). Você paga ao entregador em cada corrida.`,
+        }
+      : {
+          v: "entregador",
+          title: "Entregador do Limpa Aqui",
+          text: courier === undefined ? "Calculando..." : courier?.reason ?? "Ainda não disponível na sua região.",
+          disabled: true,
+        },
   ];
   return (
     <div className="space-y-4">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, CheckCircle2, MapPin, Search, Store, Wallet } from "lucide-react";
+import { Bike, CheckCircle2, MapPin, Search, Store, Truck, Wallet } from "lucide-react";
+import { AdminLogistics } from "./AdminLogistics";
 import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, PageHeader, Select, StatCard, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
@@ -10,7 +11,18 @@ import type { RoleStatus } from "@/contexts/RolesContext";
 
 type MunStatus = "cadastrado" | "ativo" | "suspenso";
 type Municipality = { id: number; name: string; status: MunStatus; providers: number; companies: number; visible: number };
-type Courier = { user_id: string; full_name: string | null; email: string; status: RoleStatus; created_at: string; updated_at: string };
+type Courier = {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+  vehicle: "bicicleta" | "moto" | "carro" | null;
+  cpf_last4: string | null;
+  areas: string[];
+  status: RoleStatus;
+  created_at: string;
+  completed: number;
+};
 
 const MUN_LABEL: Record<MunStatus, string> = { cadastrado: "Só cadastro", ativo: "Operação ativa", suspenso: "Suspenso" };
 const ROLE_STATUS_LABEL: Record<RoleStatus, string> = { pendente: "Aguardando", ativo: "Aprovado", suspenso: "Suspenso" };
@@ -18,7 +30,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 /** /admin — administração da plataforma: municípios do RJ e aprovação de entregadores. */
 export default function AdminPage() {
-  const [tab, setTab] = useState<"municipios" | "entregadores" | "financeiro">("municipios");
+  const [tab, setTab] = useState<"municipios" | "entregadores" | "logistica" | "financeiro">("municipios");
   const [muns, setMuns] = useState<Municipality[] | null>(null);
   const [couriers, setCouriers] = useState<Courier[] | null>(null);
   const [q, setQ] = useState("");
@@ -27,15 +39,16 @@ export default function AdminPage() {
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [m, c] = await Promise.all([supabase.rpc("admin_municipality_overview"), supabase.rpc("admin_list_role", { p_role: "entregador" })]);
+    const [m, c] = await Promise.all([supabase.rpc("admin_municipality_overview"), supabase.rpc("admin_couriers")]);
     if (m.error || c.error) setMsg({ kind: "error", text: friendlyError(m.error ?? c.error) });
     setMuns(((m.data as Municipality[]) ?? []).map((x) => ({ ...x, providers: Number(x.providers), companies: Number(x.companies), visible: Number(x.visible) })));
     setCouriers((c.data as Courier[]) ?? []);
   }, []);
 
+  // recarrega ao trocar de aba (ex.: entregador que acabou de se cadastrar)
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, tab]);
 
   const visible = useMemo(() => {
     const k = norm(q.trim());
@@ -95,6 +108,7 @@ export default function AdminPage() {
             [
               ["municipios", "Municípios", MapPin],
               ["entregadores", `Entregadores${pending ? ` (${pending})` : ""}`, Bike],
+              ["logistica", "Logística", Truck],
               ["financeiro", "Financeiro", Wallet],
             ] as const
           ).map(([key, label, Icon]) => (
@@ -113,7 +127,9 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {tab === "financeiro" ? (
+        {tab === "logistica" ? (
+          <AdminLogistics />
+        ) : tab === "financeiro" ? (
           <AdminFinance />
         ) : tab === "municipios" ? (
           <Card className="overflow-hidden">
@@ -175,6 +191,10 @@ export default function AdminPage() {
                       <p className="truncate text-xs text-grafite-500">
                         {c.email} · pediu em {formatDate(c.created_at)}
                       </p>
+                      <p className="truncate text-xs text-grafite-500" data-testid="courier-details">
+                        {c.vehicle ? `${c.vehicle === "bicicleta" ? "Bicicleta" : c.vehicle === "moto" ? "Moto" : "Carro"} · CPF final ${c.cpf_last4} · ${c.areas.join(", ") || "sem municípios"}` : "Ainda não preencheu veículo e municípios"}
+                        {Number(c.completed) > 0 && ` · ${c.completed} corrida(s) feitas`}
+                      </p>
                     </div>
                     <span
                       className={cn(
@@ -199,7 +219,7 @@ export default function AdminPage() {
               </ul>
             )}
             <p className="border-t border-grafite/5 px-4 py-3 text-xs text-grafite-500">
-              Os dados do veículo, documento e municípios de cada entregador entram na etapa de logística.
+              Aprove só quem você conferiu (documento e veículo). Entregador aprovado passa a ver as corridas livres dos municípios que escolheu.
             </p>
           </Card>
         )}

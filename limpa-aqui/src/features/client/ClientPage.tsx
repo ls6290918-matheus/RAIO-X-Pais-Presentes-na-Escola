@@ -12,6 +12,7 @@ import { ADDRESS_COLUMNS, formatAddress, type Address } from "@/lib/maps";
 import { STATUS_LABEL, STATUS_STYLE } from "@/features/orders/status";
 import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
 import { ListingModal } from "./ListingModal";
+import { OrderDeliveriesCard } from "@/features/orders/OrderDeliveriesCard";
 import { listingStatus, type MyListing } from "./ListingPage";
 import type { LogisticsMode, OrderStatus, PaymentMode } from "@/lib/types";
 
@@ -35,6 +36,7 @@ type MyOrder = {
   items: Array<{ name: string; quantity: number; unit_price: number }>;
   payment_mode: PaymentMode | null;
   logistics_mode: LogisticsMode | null;
+  delivery_fee_total: number;
 };
 
 const LABELS = ["Casa", "Trabalho", "Outro"];
@@ -298,6 +300,7 @@ export default function ClientPage() {
                     {o.payment_mode && <span>{PAYMENT_LABEL[o.payment_mode]}</span>}
                     {o.logistics_mode && <span>{LOGISTICS_LABEL[o.logistics_mode]}</span>}
                     {o.paid && <span className="font-semibold text-agua-600">Pagamento confirmado</span>}
+                    {Number(o.delivery_fee_total) > 0 && <span>Entregas: {formatBRL(Number(o.delivery_fee_total))} (pagas ao entregador)</span>}
                     <span className="font-semibold text-grafite">{formatBRL(o.total)}</span>
                     {o.business_whatsapp && (
                       <a
@@ -310,6 +313,11 @@ export default function ClientPage() {
                       </a>
                     )}
                   </div>
+                  {o.logistics_mode === "entregador" && (
+                    <div className="mt-2 rounded-lg bg-nevoa p-2">
+                      <OrderDeliveriesCard orderId={o.id} compact />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

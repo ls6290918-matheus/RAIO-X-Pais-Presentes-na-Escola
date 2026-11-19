@@ -8,7 +8,7 @@ import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate } from "@/lib/format";
 import { logoUrl } from "@/lib/logo";
 import type { LogisticsMode } from "@/lib/types";
-import { HireOptions } from "./HireOptions";
+import { HireOptions, type CourierQuote } from "./HireOptions";
 
 export type MyListing = {
   id: string;
@@ -51,6 +51,7 @@ export default function ListingPage() {
   const [choosing, setChoosing] = useState<Proposal | null>(null);
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
   const [notes, setNotes] = useState("");
+  const [quote, setQuote] = useState<CourierQuote | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -166,6 +167,8 @@ export default function ListingPage() {
                       <Button
                         onClick={() => {
                           setChoosing(p);
+                          setQuote(undefined);
+                          void supabase.rpc("quote_proposal_delivery", { p_proposal_id: p.id }).then(({ data }) => setQuote(((data as CourierQuote[]) ?? [])[0] ?? null));
                           setLogistics(p.offers_pickup && listing.wants_pickup ? "prestador" : "sem_logistica");
                         }}
                       >
@@ -193,7 +196,7 @@ export default function ListingPage() {
               <span className="text-grafite">{listing.title}</span>
               <span className="font-semibold text-petroleo">{formatBRL(choosing.price)}</span>
             </div>
-            <HireOptions pickupAvailable={choosing.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
+            <HireOptions courier={quote} pickupAvailable={choosing.offers_pickup} logistics={logistics} onLogistics={setLogistics} notes={notes} onNotes={setNotes} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setChoosing(null)}>
                 Voltar
