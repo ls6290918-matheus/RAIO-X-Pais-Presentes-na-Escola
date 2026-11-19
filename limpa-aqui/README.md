@@ -296,6 +296,14 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - Cadastro exige marcar "Li e aceito"; a versão aceita e a data ficam em `profiles.terms_version`/`terms_accepted_at`.
 - Contas antigas (ou quando `TERMS_VERSION` muda) veem um aviso único ao entrar e aceitam (`accept_terms`).
 - Os textos são um modelo inicial: revise com um advogado antes da abertura comercial.
+### Avisos (notificações no app)
+- Tabela `notifications` (cada pessoa só vê as suas; "lido" por `mark_notifications_read`). Sininho com contador ao lado
+  do menu da conta, atualizado a cada minuto e ao voltar para a aba.
+- Gerados no banco por gatilhos: pedido novo do marketplace (equipe da lavanderia), Pix confirmado (cliente e prestador),
+  situação do pedido para o cliente (em lavagem, pronto, entregue, cancelado), proposta nova (anunciante) e aceita (dono),
+  corrida disponível (entregadores aprovados do município), repasse pago e plano ativado. Uma falha ao avisar nunca
+  desfaz o evento.
+- `emailed_at` já existe para o envio por e-mail, que entra quando houver um serviço de envio (Resend/Brevo) configurado.
 
 ## Em produção
 
@@ -335,6 +343,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    19. `20261205000019_assinaturas.sql`
    20. `20261206000020_syncpay_vault.sql`
    21. `20261207000021_aceite_termos.sql`
+   22. `20261208000022_avisos.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -412,7 +421,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **153 de 153 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace e 1 do aceite dos termos), incluindo isolamento
+Resultado da última execução: **155 de 155 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos e 2 dos avisos), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

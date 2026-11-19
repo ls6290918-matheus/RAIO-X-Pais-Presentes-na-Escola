@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
+import { NotificationBell } from "./NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useRoles } from "@/contexts/RolesContext";
@@ -115,6 +116,8 @@ export function UserMenu() {
   }, []);
 
   return (
+    <div className="flex items-center gap-1">
+    <NotificationBell />
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
@@ -167,6 +170,7 @@ export function UserMenu() {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }
