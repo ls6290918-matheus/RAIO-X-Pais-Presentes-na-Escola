@@ -32,11 +32,30 @@ export function createHandler(env: Env) {
   const supabaseUrl = env("SUPABASE_URL") ?? "";
   const anonKey = env("SUPABASE_ANON_KEY") ?? "";
   const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const webhookSecret = env("SYNCPAY_WEBHOOK_SECRET") ?? "";
   const webhookUrl = env("SYNCPAY_WEBHOOK_URL") ?? `${supabaseUrl}/functions/v1/syncpay/webhook`;
-  const clientId = env("SYNCPAY_CLIENT_ID");
-  const clientSecret = env("SYNCPAY_CLIENT_SECRET");
-  const gateway = clientId && clientSecret ? new SyncPay(clientId, clientSecret, env("SYNCPAY_BASE_URL") || undefined) : null;
+
+  // Credenciais: segredos da função; se faltarem, o Vault do Supabase (lido uma vez por instância)
+  let config: Promise<{ gateway: SyncPay | null; webhookSecret: string }> | null = null;
+  function loadConfig() {
+    config ??= (async () => {
+      let id = env("SYNCPAY_CLIENT_ID");
+      let secret = env("SYNCPAY_CLIENT_SECRET");
+      let wh = env("SYNCPAY_WEBHOOK_SECRET") ?? "";
+      if (!id || !secret || !wh) {
+        try {
+          const v = await rpc<Record<string, string>>("syncpay_config", {}, null);
+          id ||= v?.SYNCPAY_CLIENT_ID;
+          secret ||= v?.SYNCPAY_CLIENT_SECRET;
+          wh ||= v?.SYNCPAY_WEBHOOK_SECRET ?? "";
+        } catch (e) {
+          console.error("config", String(e));
+          config = null; // tenta de novo na próxima chamada
+        }
+      }
+      return { gateway: id && secret ? new SyncPay(id, secret, env("SYNCPAY_BASE_URL") || undefined) : null, webhookSecret: wh };
+    })();
+    return config;
+  }
 
   // Chama uma função do banco: com o login do usuário (as regras do banco valem para ele) ou como servidor
   async function rpc<T = any>(fn: string, args: Record<string, unknown>, userToken: string | null): Promise<T> {
@@ -62,13 +81,14 @@ export function createHandler(env: Env) {
     return body as T;
   }
 
-  function requireGateway(): SyncPay {
+  async function requireGateway(): Promise<SyncPay> {
+    const { gateway } = await loadConfig();
     if (!gateway) throw new HttpError(503, "O pagamento pelo app ainda não está configurado. Escolha pagar direto ao prestador.");
     return gateway;
   }
 
   async function applyFromGateway(identifier: string) {
-    const t = await requireGateway().transaction(identifier);
+    const t = await (await requireGateway()).transaction(identifier);
     if ((STATUSES as readonly string[]).includes(t.status)) {
       await rpc("app_payment_apply", { p_identifier: identifier, p_status: t.status, p_amount: t.amount ?? null }, null);
     }
@@ -96,7 +116,9 @@ export function createHandler(env: Env) {
 
     let r: { pix_code: string; identifier: string };
     try {
-      r = await requireGateway().cashIn({
+      const gw = await requireGateway();
+      const { webhookSecret } = await loadConfig();
+      r = await gw.cashIn({
         amount: Number(c.amount), description: c.description, webhookUrl: webhookSecret ? "" : webhookUrl,
         name: c.name, document: onlyDigits(body.cpf), email: c.email, phone,
       });
@@ -138,7 +160,7 @@ export function createHandler(env: Env) {
     const p = await rpc("app_payment_refund_prepare", { p_transaction_id: body.transaction_id }, token);
     let r: any;
     try {
-      r = await requireGateway().refund(p.identifier, body.reason, details);
+      r = await (await requireGateway()).refund(p.identifier, body.reason, details);
     } catch (e) {
       if (e instanceof HttpError) throw e;
       const b = e instanceof SyncPayError ? (e.body as any) : null;
@@ -154,6 +176,7 @@ export function createHandler(env: Env) {
   async function webhook(req: Request) {
     const raw = await req.text();
     const signature = req.headers.get("X-SyncPay-Signature");
+    const { gateway, webhookSecret } = await loadConfig();
     if (signature) {
       if (!(await verifySignature(signature, raw, webhookSecret))) return json({ error: "assinatura inválida" }, 401);
       const ev = JSON.parse(raw);

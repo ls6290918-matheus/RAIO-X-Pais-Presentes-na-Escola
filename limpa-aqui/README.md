@@ -255,8 +255,9 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
   - `POST /functions/v1/syncpay/webhook`: aviso `transaction.updated` com assinatura HMAC (`X-SyncPay-Signature`,
     janela de 5 minutos, deduplicado por `event_id`). Aviso sem assinatura nunca é confiado: só dispara uma consulta
     direta à SyncPay. Token de acesso reaproveitado por 1 hora.
-  - Segredos (no Supabase → Edge Functions → Secrets, nunca no código): `SYNCPAY_CLIENT_ID`, `SYNCPAY_CLIENT_SECRET`,
-    `SYNCPAY_WEBHOOK_SECRET`. Publicada com verificação de JWT desligada (o webhook não tem login; as ações do
+  - Segredos (nunca no código): `SYNCPAY_CLIENT_ID`, `SYNCPAY_CLIENT_SECRET`, `SYNCPAY_WEBHOOK_SECRET` — nos segredos
+    da Edge Function ou, se faltarem lá, no **Vault** do Supabase (`vault.create_secret('<valor>', '<NOME>')`), lido pela
+    função `syncpay_config()`, que só o servidor chama (migração `20261206000020_syncpay_vault.sql`). Publicada com verificação de JWT desligada (o webhook não tem login; as ações do
     usuário são validadas pelo banco com o token dele).
 - **Telas:** opção "Pelo app, com Pix" ao contratar (perfil e proposta); `/cliente/pagar/:id` com CPF, QR Code,
   copia e cola, "Já paguei" e atualização automática; "Aguardando Pix" para o prestador (lista e pedido); chave Pix e
@@ -326,6 +327,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    17. `20261203000017_painel_admin.sql`
    18. `20261204000018_pagamento_app.sql`
    19. `20261205000019_assinaturas.sql`
+   20. `20261206000020_syncpay_vault.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
