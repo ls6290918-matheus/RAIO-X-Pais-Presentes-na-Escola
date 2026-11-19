@@ -15,6 +15,10 @@ import {
   Settings,
   X,
   Gem,
+  Package,
+  Plus,
+  Users,
+  MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
@@ -232,10 +236,64 @@ export function AppLayout() {
           </div>
           <UserMenu />
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 sm:pt-8 lg:pb-8">
           <Outlet />
         </main>
       </div>
+      <ProviderTabBar onMore={() => setMobileOpen(true)} />
     </div>
+  );
+}
+
+/** Barra inferior do app do prestador no celular (Painel, Pedidos, Novo pedido, Clientes, Mais). */
+function ProviderTabBar({ onMore }: { onMore: () => void }) {
+  const { hasFeature } = useBusiness();
+  const orders = hasFeature("pedidos");
+  const clients = hasFeature("clientes");
+  const item = (active: boolean) => cn("flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-agua-600" : "text-grafite-500");
+  return (
+    <nav aria-label="Navegação do prestador" className="fixed inset-x-0 bottom-0 z-30 border-t border-grafite/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" data-testid="provider-tabbar">
+      <ul className="mx-auto grid max-w-md grid-cols-5 items-end">
+        <li>
+          <NavLink to="/app" end className={({ isActive }) => item(isActive)}>
+            <LayoutDashboard className="h-5 w-5" aria-hidden /> Painel
+          </NavLink>
+        </li>
+        <li>
+          {orders ? (
+            <NavLink to="/app/pedidos" end className={({ isActive }) => item(isActive)}>
+              <Package className="h-5 w-5" aria-hidden /> Pedidos
+            </NavLink>
+          ) : (
+            <span className={cn(item(false), "opacity-40")}>
+              <Package className="h-5 w-5" aria-hidden /> Pedidos
+            </span>
+          )}
+        </li>
+        <li className="flex justify-center">
+          {orders && (
+            <Link to="/app/pedidos/novo" className="-mt-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-agua text-petroleo shadow-lg" aria-label="Novo pedido">
+              <Plus className="h-6 w-6" strokeWidth={2.5} />
+            </Link>
+          )}
+        </li>
+        <li>
+          {clients ? (
+            <NavLink to="/app/clientes" className={({ isActive }) => item(isActive)}>
+              <Users className="h-5 w-5" aria-hidden /> Clientes
+            </NavLink>
+          ) : (
+            <span className={cn(item(false), "opacity-40")}>
+              <Users className="h-5 w-5" aria-hidden /> Clientes
+            </span>
+          )}
+        </li>
+        <li>
+          <button type="button" onClick={onMore} className={cn(item(false), "w-full")}>
+            <MoreHorizontal className="h-5 w-5" aria-hidden /> Mais
+          </button>
+        </li>
+      </ul>
+    </nav>
   );
 }

@@ -27,6 +27,7 @@ import type { Order } from "@/lib/types";
 import { OPEN_STATUSES } from "@/features/orders/status";
 import { StatusBadge } from "@/features/orders/StatusBadge";
 import { SEGMENT_LABEL } from "@/features/onboarding/catalog";
+import { EarningsPanel } from "./EarningsPanel";
 
 type Upcoming = Pick<Order, "id" | "number" | "status" | "due_date" | "total"> & { customers: { name: string } | null };
 type Stats = { open: number; ready: number; late: number; dueToday: number; upcoming: Upcoming[] };
@@ -400,6 +401,8 @@ export default function DashboardPage() {
           </Link>
         </Card>
       )}
+
+      {role === "owner" && business && showOrders && <EarningsPanel businessId={business.id} />}
 
       {body}
     </div>
