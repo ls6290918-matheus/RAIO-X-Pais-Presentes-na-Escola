@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Circle, MapPin, MessageCircle, Navigation, PackageX, Pencil, Store, Truck } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, Textarea, buttonClass, cn } from "@/components/shared/ui";
 import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
+import { MarketplacePaymentCard } from "./MarketplacePaymentCard";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
@@ -362,31 +363,35 @@ export default function OrderDetailPage() {
             </Link>
           </Card>
 
+          {order.origin === "marketplace" ? (
+            <MarketplacePaymentCard order={order} onChanged={load} />
+          ) : (
           <Card className="p-6">
-            <h2 className="text-base font-semibold text-petroleo">Pagamento</h2>
-            <label className="mt-3 flex cursor-pointer items-center justify-between gap-3">
-              <span className="text-sm text-grafite">{order.paid ? "Pago" : "A receber"}</span>
-              <input
-                type="checkbox"
-                role="switch"
-                className="peer sr-only"
-                checked={order.paid}
-                disabled={busy === "paid" || order.status === "cancelado"}
-                onChange={(e) =>
-                  void update({ paid: e.target.checked }, "paid", e.target.checked ? "Pagamento registrado." : "Pagamento desmarcado.")
-                }
-              />
-              <span
-                aria-hidden
-                className={cn(
-                  "relative h-6 w-11 rounded-full transition peer-focus-visible:ring-4 peer-focus-visible:ring-agua/30",
-                  order.paid ? "bg-agua" : "bg-grafite/20",
-                )}
-              >
-                <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition", order.paid ? "left-[22px]" : "left-0.5")} />
-              </span>
-            </label>
-          </Card>
+              <h2 className="text-base font-semibold text-petroleo">Pagamento</h2>
+              <label className="mt-3 flex cursor-pointer items-center justify-between gap-3">
+                <span className="text-sm text-grafite">{order.paid ? "Pago" : "A receber"}</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="peer sr-only"
+                  checked={order.paid}
+                  disabled={busy === "paid" || order.status === "cancelado"}
+                  onChange={(e) =>
+                    void update({ paid: e.target.checked }, "paid", e.target.checked ? "Pagamento registrado." : "Pagamento desmarcado.")
+                  }
+                />
+                <span
+                  aria-hidden
+                  className={cn(
+                    "relative h-6 w-11 rounded-full transition peer-focus-visible:ring-4 peer-focus-visible:ring-agua/30",
+                    order.paid ? "bg-agua" : "bg-grafite/20",
+                  )}
+                >
+                  <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition", order.paid ? "left-[22px]" : "left-0.5")} />
+                </span>
+              </label>
+            </Card>
+          )}
 
           <Card className="p-6">
             <h2 className="text-base font-semibold text-petroleo">Andamento</h2>

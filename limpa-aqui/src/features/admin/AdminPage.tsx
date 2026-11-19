@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, CheckCircle2, MapPin, Search, Store } from "lucide-react";
+import { Bike, CheckCircle2, MapPin, Search, Store, Wallet } from "lucide-react";
+import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, PageHeader, Select, StatCard, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +18,7 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 
 /** /admin — administração da plataforma: municípios do RJ e aprovação de entregadores. */
 export default function AdminPage() {
-  const [tab, setTab] = useState<"municipios" | "entregadores">("municipios");
+  const [tab, setTab] = useState<"municipios" | "entregadores" | "financeiro">("municipios");
   const [muns, setMuns] = useState<Municipality[] | null>(null);
   const [couriers, setCouriers] = useState<Courier[] | null>(null);
   const [q, setQ] = useState("");
@@ -89,11 +90,12 @@ export default function AdminPage() {
           <StatCard label="Entregadores aguardando" value={String(pending)} icon={<Bike className="h-5 w-5" />} />
         </div>
 
-        <div className="flex gap-2" role="tablist">
+        <div className="flex flex-wrap gap-2" role="tablist">
           {(
             [
               ["municipios", "Municípios", MapPin],
               ["entregadores", `Entregadores${pending ? ` (${pending})` : ""}`, Bike],
+              ["financeiro", "Financeiro", Wallet],
             ] as const
           ).map(([key, label, Icon]) => (
             <button
@@ -111,7 +113,9 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {tab === "municipios" ? (
+        {tab === "financeiro" ? (
+          <AdminFinance />
+        ) : tab === "municipios" ? (
           <Card className="overflow-hidden">
             <div className="flex flex-col gap-3 p-4 sm:flex-row">
               <div className="relative flex-1">

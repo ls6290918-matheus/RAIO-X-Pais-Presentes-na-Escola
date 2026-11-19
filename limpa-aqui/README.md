@@ -183,6 +183,21 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
 - Apagar a conta do cliente apaga os anúncios e mantém o pedido na lavanderia, sem o vínculo
   (chaves de `orders.listing_id`/`proposal_id` verificadas no fim da operação).
 
+### Marketplace — Etapa 5a (pagamento direto, comissões e livro-razão)
+- **Regras de comissão** (`commission_rules`), só pelo admin em Administração → Financeiro: percentual e/ou valor fixo
+  por modalidade de pagamento, opcionalmente por serviço e/ou município. Sem regra, nenhuma comissão. Nova regra
+  encerra a do mesmo recorte (histórico mantido); a mais específica vence; vale para pedidos feitos depois dela.
+- **Comissão por pedido** (`platform_commissions`): criada quando o pedido do marketplace ganha valor, pela regra
+  vigente na data do pedido (`prevista`); vira `a_cobrar` quando o prestador confirma o recebimento (sobre o valor
+  recebido); `cancelada` se o pedido for cancelado; o admin marca `paga`. O dono vê a comissão no pedido.
+- **Pagamento direto** (`external_payment_confirmations`): no pedido do marketplace, "Confirmar recebimento"
+  (valor, forma — Pix, dinheiro, cartão, outro — e comprovante opcional no bucket privado `payment-evidence`).
+  Uma vez só; o "pago" desses pedidos não muda pelo interruptor. O cliente vê "Pagamento confirmado".
+- **Livro-razão** (`financial_ledger`): pedido, comissão prevista/a cobrar/paga/cancelada, pagamento confirmado,
+  pedido cancelado e criação/encerramento de regras. Só inclusão: nem o dono do banco altera ou apaga um lançamento.
+- **Resumo** (`admin_finance_summary`) separado por modalidade: pagamento direto é "declarado" pelo prestador e nunca
+  somado ao que entra pelo app.
+
 
 
 ## Em produção
@@ -216,6 +231,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    12. `20261128000012_anunciante.sql`
    13. `20261129000013_marketplace_prestador.sql`
    14. `20261130000014_contratacao.sql`
+   15. `20261201000015_pagamento_direto.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -293,7 +309,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **115 de 115 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 31 do marketplace), incluindo isolamento
+Resultado da última execução: **123 de 123 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 39 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

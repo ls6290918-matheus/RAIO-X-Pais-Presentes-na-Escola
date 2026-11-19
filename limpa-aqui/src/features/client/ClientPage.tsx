@@ -297,6 +297,7 @@ export default function ClientPage() {
                     <span>Previsão {formatDate(`${o.due_date}T12:00:00`)}</span>
                     {o.payment_mode && <span>{PAYMENT_LABEL[o.payment_mode]}</span>}
                     {o.logistics_mode && <span>{LOGISTICS_LABEL[o.logistics_mode]}</span>}
+                    {o.paid && <span className="font-semibold text-agua-600">Pagamento confirmado</span>}
                     <span className="font-semibold text-grafite">{formatBRL(o.total)}</span>
                     {o.business_whatsapp && (
                       <a
