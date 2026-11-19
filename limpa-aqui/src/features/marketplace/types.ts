@@ -19,6 +19,7 @@ export type SearchResult = {
   accepts_direct_payment: boolean;
   accepts_app_payment: boolean;
   distance_km: number | null;
+  featured?: boolean;
 };
 
 export type PublicProvider = Omit<SearchResult, "min_price" | "services_count" | "distance_km"> & {

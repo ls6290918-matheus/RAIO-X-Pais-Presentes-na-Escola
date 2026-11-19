@@ -269,6 +269,26 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
   Administração → Pagamentos pelo app.
 
 
+### Marketplace — Etapa 8 (planos e assinaturas dos prestadores)
+- **Planos editáveis pelo admin** (`plans`, `plan_features`; Administração → Planos): nome, preço, período em dias,
+  recursos liberados (do catálogo `features`), limite de pedidos de balcão por mês, limite de funcionários, destaque na
+  busca, visível/ativo. Nada de preço fixo no código.
+- **Plano padrão "Grátis"** (`is_default`): sempre gratuito e ativo, libera todos os recursos que existem hoje — quem não
+  assina (incluindo lavanderias antigas) não perde nada.
+- **Plano que vale** (`business_plan_id`): assinatura ativa e dentro do período + tolerância (`platform_settings.subscription_grace_days`,
+  padrão 5 dias, editável); senão, o padrão. Calculado na hora, sem rotina agendada.
+- **Mensalidade por Pix** (`subscription_invoices`): o dono escolhe o plano em **Meu plano** (`/app/plano`), paga pelo mesmo
+  fluxo de Pix da Etapa 5b (CPF não guardado; ações `invoice_checkout`/`invoice_status` da função `syncpay`). Pago → plano
+  ativo pelo período; renovar antes do fim soma os dias; estorno da mensalidade cancela o período; Pix de mensalidade já paga
+  ou cancelada vira "a devolver". Sem repasse (a mensalidade é receita da plataforma).
+- **Limites no banco:** pedidos de balcão por mês (gatilho em `orders`; pedidos do marketplace nunca são barrados) e
+  funcionários (gatilho em `business_members`; trocar para um plano menor que a equipe atual é recusado).
+- **Recursos fora do plano** somem do menu e a tela mostra "não faz parte do plano X" com link para os planos.
+  (Os recursos de tela são bloqueados na interface; limites numéricos são garantidos pelo banco.)
+- **Destaque:** `search_providers` devolve `featured` e ordena quem tem plano com destaque primeiro (selo na busca).
+- **Admin:** assinantes pagantes, MRR, recebido em 30 dias, em tolerância/vencidos, lista de assinaturas, cortesia
+  (`admin_grant_plan`, até uma data ou sem fim) e tolerância.
+
 
 ## Em produção
 
@@ -305,6 +325,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    16. `20261202000016_logistica.sql`
    17. `20261203000017_painel_admin.sql`
    18. `20261204000018_pagamento_app.sql`
+   19. `20261205000019_assinaturas.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -382,7 +403,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **144 de 144 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 60 do marketplace), incluindo isolamento
+Resultado da última execução: **152 de 152 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 68 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

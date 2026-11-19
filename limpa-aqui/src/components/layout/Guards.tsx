@@ -71,9 +71,26 @@ export function RequireOwner({ children }: { children: ReactNode }) {
 
 /** Telas de um recurso que a lavanderia pode desligar em Configurações. */
 export function RequireFeature({ code, children }: { code: string; children: ReactNode }) {
-  const { hasFeature, features, role } = useBusiness();
+  const { hasFeature, features, role, blockedByPlan, plan } = useBusiness();
   if (hasFeature(code)) return <>{children}</>;
   const name = features.find((f) => f.code === code)?.name ?? "Este recurso";
+  if (blockedByPlan(code))
+    return (
+      <Card>
+        <EmptyState
+          icon={<PowerOff className="h-6 w-6" />}
+          title={`${name} não faz parte do plano ${plan?.plan.name ?? "atual"}`}
+          description={role === "owner" ? "Veja os planos que incluem este recurso." : "Peça ao dono da lavanderia para mudar de plano."}
+          action={
+            role === "owner" && (
+              <Link to="/app/plano" className={buttonClass("primary")}>
+                Ver planos
+              </Link>
+            )
+          }
+        />
+      </Card>
+    );
   return (
     <Card>
       <EmptyState

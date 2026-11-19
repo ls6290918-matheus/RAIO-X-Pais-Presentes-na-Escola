@@ -38,6 +38,7 @@ import ProviderPage from "@/features/marketplace/ProviderPage";
 import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
 import ListingPage from "@/features/client/ListingPage";
 import PayPage from "@/features/client/PayPage";
+import PlanPage from "@/features/plan/PlanPage";
 import CourierPage from "@/features/courier/CourierPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
@@ -216,6 +217,14 @@ export default function App() {
                   }
                 />
                 <Route path="configuracoes" element={<SettingsPage />} />
+                <Route
+                  path="plano"
+                  element={
+                    <RequireOwner>
+                      <PlanPage />
+                    </RequireOwner>
+                  }
+                />
               </Route>
 
               {/* /:slug (página pública) e /rastrear/:token chegam na Etapa 6 */}

@@ -43,6 +43,16 @@ export type FeatureState = {
   source: "regra" | "manual" | null;
 };
 
+/** Plano que vale agora para a lavanderia (Etapa 8). */
+export type MyPlan = {
+  plan: { id: string; code: string; name: string; price: number; period_days: number; max_orders_month: number | null; max_staff: number | null; featured: boolean; is_default: boolean };
+  features: string[];
+  subscription: { plan_id: string; plan_name: string; status: "ativa" | "cancelada"; current_period_end: string | null; source: string; expired: boolean; grace_until: string | null } | null;
+  usage: { orders_month: number; staff: number };
+  open_invoice: { id: string; amount: number; plan_id: string; plan_name: string; created_at: string } | null;
+  can_pay: boolean;
+};
+
 type BusinessState = {
   business: Business | null;
   settings: BusinessSettings | null;
@@ -58,6 +68,11 @@ type BusinessState = {
   configured: boolean;
   /** Recurso ligado? Sem configuração, vale o comportamento antigo: tudo o que já existe fica disponível. */
   hasFeature: (code: string) => boolean;
+  /** Plano atual (null enquanto carrega). */
+  plan: MyPlan | null;
+  /** Recurso ligado mas fora do plano atual. */
+  blockedByPlan: (code: string) => boolean;
+  refreshPlan: () => Promise<void>;
 };
 
 const BusinessContext = createContext<BusinessState | null>(null);
@@ -81,9 +96,10 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [features, setFeatures] = useState<FeatureState[]>([]);
   const [segmentModules, setSegmentModules] = useState<string[]>([]);
+  const [plan, setPlan] = useState<MyPlan | null>(null);
   const configured = features.some((f) => f.source !== null);
 
-  const hasFeature = useCallback(
+  const enabledHere = useCallback(
     (code: string) => {
       const f = features.find((x) => x.code === code);
       if (!f) return false;
@@ -91,6 +107,20 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     },
     [features, configured],
   );
+  // Sem plano carregado (ou erro), não bloqueia: o banco é quem garante os limites
+  const inPlan = useCallback((code: string) => !plan || plan.features.includes(code), [plan]);
+  const hasFeature = useCallback((code: string) => enabledHere(code) && inPlan(code), [enabledHere, inPlan]);
+  const blockedByPlan = useCallback((code: string) => enabledHere(code) && !inPlan(code), [enabledHere, inPlan]);
+
+  const refreshPlan = useCallback(async () => {
+    if (!business) return setPlan(null);
+    const { data } = await supabase.rpc("my_plan", { p_business_id: business.id });
+    setPlan((data as MyPlan) ?? null);
+  }, [business]);
+
+  useEffect(() => {
+    void refreshPlan();
+  }, [refreshPlan]);
 
   const refresh = useCallback(async () => {
     const finish = () => {
@@ -171,7 +201,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   return (
-    <BusinessContext.Provider value={{ business, settings, role, loading, error, refresh, features, segmentModules, configured, hasFeature }}>
+    <BusinessContext.Provider value={{ business, settings, role, loading, error, refresh, features, segmentModules, configured, hasFeature, plan, blockedByPlan, refreshPlan }}>
       {children}
     </BusinessContext.Provider>
   );

@@ -3,6 +3,7 @@
 //        { action: "checkout", order_id, cpf? }  → gera (ou reaproveita) o Pix do pedido
 //        { action: "status",   order_id }        → "Já paguei": consulta o gateway (limite de 5 por cobrança)
 //        { action: "refund",   transaction_id, reason, details } → admin pede o estorno
+//        { action: "invoice_checkout", invoice_id, cpf? } / { action: "invoice_status", invoice_id } → mensalidade do plano
 //   POST /functions/v1/syncpay/webhook    (avisos da SyncPay; sem login, com assinatura HMAC)
 // O CPF de quem paga só passa por aqui a caminho do gateway: nunca é gravado nem registrado em log.
 import { isValidCpf, onlyDigits, STATUSES, SyncPay, SyncPayError, verifySignature } from "./syncpay.ts";
@@ -74,16 +75,24 @@ export function createHandler(env: Env) {
     return t.status;
   }
 
-  async function checkout(token: string, body: any) {
-    if (!UUID.test(String(body?.order_id ?? ""))) throw new HttpError(400, "Pedido inválido.");
-    const c = await rpc("app_payment_checkout", { p_order_id: body.order_id }, token);
+  // Pedido (kind "order") ou mensalidade de plano (kind "invoice"): mesmo fluxo, funções do banco diferentes
+  const KINDS = {
+    order: { idField: "order_id", checkout: "app_payment_checkout", register: "app_payment_register", status: "app_payment_status_check", arg: "p_order_id" },
+    invoice: { idField: "invoice_id", checkout: "subscription_checkout", register: "subscription_register", status: "subscription_status_check", arg: "p_invoice_id" },
+  } as const;
+
+  async function checkout(token: string, body: any, kind: keyof typeof KINDS = "order") {
+    const k = KINDS[kind];
+    const id = String(body?.[k.idField] ?? "");
+    if (!UUID.test(id)) throw new HttpError(400, kind === "order" ? "Pedido inválido." : "Mensalidade inválida.");
+    const c = await rpc(k.checkout, { [k.arg]: id }, token);
     if (c.pending) {
       return { pix_code: c.pending.pix_code, amount: Number(c.pending.amount), created_at: c.pending.created_at, reused: true };
     }
     if (!body?.cpf) return { needs_cpf: true, amount: Number(c.amount) };
     if (!isValidCpf(body.cpf)) throw new HttpError(400, "CPF inválido. Confira os números.");
     const phone = onlyDigits(c.phone);
-    if (!c.email || phone.length < 10) throw new HttpError(400, "Complete seu e-mail e WhatsApp na sua área de cliente para pagar pelo app.");
+    if (!c.email || phone.length < 10) throw new HttpError(400, "Complete seu e-mail e WhatsApp no seu cadastro para pagar pelo app.");
 
     let r: { pix_code: string; identifier: string };
     try {
@@ -99,15 +108,17 @@ export function createHandler(env: Env) {
       throw new HttpError(502, "Não foi possível gerar o Pix agora. Tente de novo em instantes.");
     }
     if (!r?.identifier || !r?.pix_code) throw new HttpError(502, "Não foi possível gerar o Pix agora. Tente de novo em instantes.");
-    const saved = await rpc("app_payment_register", {
-      p_order_id: body.order_id, p_user_id: c.user_id, p_identifier: r.identifier, p_pix_code: r.pix_code, p_amount: c.amount,
+    const saved = await rpc(k.register, {
+      [k.arg]: id, p_user_id: c.user_id, p_identifier: r.identifier, p_pix_code: r.pix_code, p_amount: c.amount,
     }, null);
     return { pix_code: saved.pix_code, amount: Number(saved.amount), created_at: saved.created_at, reused: false };
   }
 
-  async function status(token: string, body: any) {
-    if (!UUID.test(String(body?.order_id ?? ""))) throw new HttpError(400, "Pedido inválido.");
-    const s = await rpc("app_payment_status_check", { p_order_id: body.order_id }, token);
+  async function status(token: string, body: any, kind: keyof typeof KINDS = "order") {
+    const k = KINDS[kind];
+    const id = String(body?.[k.idField] ?? "");
+    if (!UUID.test(id)) throw new HttpError(400, kind === "order" ? "Pedido inválido." : "Mensalidade inválida.");
+    const s = await rpc(k.status, { [k.arg]: id }, token);
     if (!s.query) return { paid: Boolean(s.paid), status: s.status, checked: false };
     try {
       const st = await applyFromGateway(s.identifier);
@@ -189,6 +200,8 @@ export function createHandler(env: Env) {
         case "checkout": return json(await checkout(token, body));
         case "status": return json(await status(token, body));
         case "refund": return json(await refund(token, body));
+        case "invoice_checkout": return json(await checkout(token, body, "invoice"));
+        case "invoice_status": return json(await status(token, body, "invoice"));
         default: throw new HttpError(400, "Ação inválida.");
       }
     } catch (e) {

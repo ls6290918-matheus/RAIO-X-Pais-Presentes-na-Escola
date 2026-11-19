@@ -168,7 +168,10 @@ export default function SearchPage() {
                             </span>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-base font-semibold text-petroleo">{r.name}</p>
+                            <p className="flex items-center gap-2 text-base font-semibold text-petroleo">
+                              <span className="truncate">{r.name}</span>
+                              {r.featured && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Destaque</span>}
+                            </p>
                             <p className="text-xs text-grafite-500">
                               {r.provider_type ? PROVIDER_TYPE_LABEL[r.provider_type] : "Prestador"} ·{" "}
                               {[r.neighborhood, r.municipality_name].filter(Boolean).join(", ")}

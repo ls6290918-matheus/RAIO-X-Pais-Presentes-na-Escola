@@ -14,6 +14,7 @@ import {
   Menu,
   Settings,
   X,
+  Gem,
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
@@ -31,7 +32,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
  * Lavanderia ainda não configurada pelo assistente vê o menu de antes.
  */
 function useNav(): NavItem[] {
-  const { features, configured, hasFeature, role } = useBusiness();
+  const { features, configured, hasFeature, role, blockedByPlan } = useBusiness();
   const items: NavItem[] = [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }];
   // Anúncios de clientes da região (marketplace) — quem propõe é o dono
   if (role === "owner") items.push({ to: "/app/oportunidades", label: "Oportunidades", icon: Inbox });
@@ -43,10 +44,11 @@ function useNav(): NavItem[] {
     const label = FEATURE_META[code]?.menuLabel ?? f.name;
     if (f.status === "disponivel" && f.route) {
       if (hasFeature(code)) items.push({ to: f.route, label, icon: featureIcon(code) });
-    } else if (configured ? f.enabled : LEGACY_SOON.includes(code)) {
+    } else if ((configured ? f.enabled : LEGACY_SOON.includes(code)) && !blockedByPlan(code)) {
       items.push({ to: `/app/${code}`, label, icon: featureIcon(code), soon: true });
     }
   }
+  if (role === "owner") items.push({ to: "/app/plano", label: "Meu plano", icon: Gem });
   items.push({ to: "/app/configuracoes", label: "Configurações", icon: Settings });
   return items;
 }
