@@ -4,6 +4,7 @@ import { Alert, Button, Card, Field, InlineLoader, Input, Select, cn } from "@/c
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate, formatDateTime, todayISO } from "@/lib/format";
+import { AdminOverview } from "./AdminOverview";
 
 type ModeRow = { mode: "direto" | "app"; orders: number; canceled: number; orders_total: number; paid_orders: number; paid_total: number };
 type Dashboard = {
@@ -216,6 +217,21 @@ export function AdminDashboard() {
       </Card>
       {error && <Alert>{error}</Alert>}
 
+      <AdminOverview
+        from={from}
+        to={to}
+        nums={{
+          orders: n(modes.direto?.orders) + n(modes.app?.orders),
+          ordersTotal: n(modes.direto?.orders_total) + n(modes.app?.orders_total),
+          paidOrders: n(modes.direto?.paid_orders) + n(modes.app?.paid_orders),
+          paidTotal: n(modes.direto?.paid_total) + n(modes.app?.paid_total),
+          commissionGenerated: n(dash.commissions.generated),
+          commissionPaid: n(dash.commissions.paid),
+          munActive: n(dash.coverage.active),
+          munWithProviders: n(dash.coverage.with_providers),
+        }}
+      />
+
       {/* Pedidos e dinheiro por modalidade */}
       <Section
         title="Pedidos e dinheiro por modalidade"
@@ -241,7 +257,6 @@ export function AdminDashboard() {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-[11px] text-grafite-500">Pagamento pelo app chega na Etapa 5b: até lá a coluna fica zerada.</p>
       </Section>
 
       {dash.app_payments && (
