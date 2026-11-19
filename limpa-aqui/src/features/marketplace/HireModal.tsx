@@ -15,14 +15,14 @@ import type { PublicProvider } from "./types";
 type Addr = { id: string; label: string; is_default: boolean; municipality: { name: string } | null };
 
 /** Contratar direto pelo perfil: escolhe serviços do catálogo (preço do catálogo), endereço, logística e pagamento. */
-export function HireModal({ provider, onClose }: { provider: PublicProvider; onClose: () => void }) {
+export function HireModal({ provider, onClose, initialQty }: { provider: PublicProvider; onClose: () => void; initialQty?: Record<string, number> }) {
   const { user } = useAuth();
   const { hasRole, addRole } = useRoles();
   const navigate = useNavigate();
   const [addresses, setAddresses] = useState<Addr[] | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [addressId, setAddressId] = useState("");
-  const [qty, setQty] = useState<Record<string, number>>({});
+  const [qty, setQty] = useState<Record<string, number>>(initialQty ?? {});
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
   const [payment, setPayment] = useState<PaymentMode>(provider.accepts_direct_payment ? "direto" : "app");
   const [notes, setNotes] = useState("");
@@ -80,7 +80,7 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
     setBusy(false);
     if (err) return setError(friendlyError(err));
     if (payment === "app") return navigate(`/cliente/pagar/${orderId as string}`);
-    navigate("/cliente", { state: { success: `Pronto! Seu pedido foi enviado para ${provider.name}. Acompanhe em "Meus pedidos".` } });
+    navigate("/cliente", { state: { success: `Pronto! Seu pedido foi enviado para ${provider.name}. Acompanhe em "Pedidos".` } });
   }
 
   const ready = addresses && addresses.length > 0 && phone;
@@ -98,7 +98,7 @@ export function HireModal({ provider, onClose }: { provider: PublicProvider; onC
                 ? "Antes de contratar, informe seu WhatsApp para o prestador falar com você."
                 : "Antes de contratar, cadastre um endereço no estado do RJ."}
           </Alert>
-          <Link to="/cliente" className={buttonClass()}>
+          <Link to="/cliente/conta" className={buttonClass()}>
             Completar meu cadastro
           </Link>
         </div>

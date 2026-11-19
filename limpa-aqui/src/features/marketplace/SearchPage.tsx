@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Bike, LocateFixed, MapPin, Search, Store, Wallet } from "lucide-react";
+import { LocateFixed, MapPin, Search } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Select, buttonClass, cn } from "@/components/shared/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
-import { formatBRL } from "@/lib/format";
-import { logoUrl } from "@/lib/logo";
 import { PublicLayout } from "./PublicLayout";
-import { PROVIDER_TYPE_LABEL, formatKm, type SearchResult } from "./types";
+import { type SearchResult } from "./types";
+import { ProviderCard } from "./ProviderCard";
 
 type Mun = { id: number; name: string; providers: number };
 type Cat = { code: string; name: string };
@@ -109,23 +108,13 @@ export default function SearchPage() {
         ) : (
           <>
             <Card className="p-4 sm:p-5">
-              <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                 <Field label="Município" htmlFor="b-mun">
                   <Select id="b-mun" value={mun} onChange={(e) => setParam("m", e.target.value)}>
                     <option value="">Escolha o município</option>
                     {muns.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name} ({m.providers})
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Serviço" htmlFor="b-cat">
-                  <Select id="b-cat" value={cat} onChange={(e) => setParam("c", e.target.value)}>
-                    <option value="">Todos os serviços</option>
-                    {cats.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.name}
                       </option>
                     ))}
                   </Select>
@@ -141,6 +130,23 @@ export default function SearchPage() {
               )}
             </Card>
 
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="tablist" aria-label="Serviço" data-testid="search-chips">
+              {[{ code: "", name: "Todos" }, ...cats].map((c) => (
+                <button
+                  key={c.code || "todos"}
+                  role="tab"
+                  aria-selected={cat === c.code}
+                  onClick={() => setParam("c", c.code)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition",
+                    cat === c.code ? "bg-petroleo text-white" : "bg-white text-grafite-500 ring-1 ring-grafite/10",
+                  )}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
             {!mun ? (
               <p className="text-sm text-grafite-500">Escolha um município para ver quem atende por lá.</p>
             ) : searching || results === null ? (
@@ -154,50 +160,10 @@ export default function SearchPage() {
                 />
               </Card>
             ) : (
-              <ul className="grid gap-4 sm:grid-cols-2" data-testid="search-results">
+              <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" data-testid="search-results">
                 {results.map((r) => (
-                  <li key={r.id}>
-                    <Link to={`/p/${r.slug}`} className="block h-full">
-                      <Card className="h-full p-5 transition hover:border-agua">
-                        <div className="flex items-start gap-3">
-                          {r.logo_path ? (
-                            <img src={logoUrl(r.logo_path) ?? undefined} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
-                          ) : (
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-petroleo text-agua">
-                              <Store className="h-5 w-5" aria-hidden />
-                            </span>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="flex items-center gap-2 text-base font-semibold text-petroleo">
-                              <span className="truncate">{r.name}</span>
-                              {r.featured && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Destaque</span>}
-                            </p>
-                            <p className="text-xs text-grafite-500">
-                              {r.provider_type ? PROVIDER_TYPE_LABEL[r.provider_type] : "Prestador"} ·{" "}
-                              {[r.neighborhood, r.municipality_name].filter(Boolean).join(", ")}
-                            </p>
-                          </div>
-                          {r.distance_km != null && (
-                            <span className="shrink-0 rounded-full bg-nevoa px-2.5 py-1 text-xs font-semibold text-grafite">{formatKm(r.distance_km)}</span>
-                          )}
-                        </div>
-                        {r.public_description && <p className="mt-3 line-clamp-2 text-sm text-grafite-500">{r.public_description}</p>}
-                        {r.categories.length > 0 && <p className="mt-3 text-xs text-grafite">{r.categories.join(" · ")}</p>}
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                          {r.min_price != null && <span className="font-semibold text-petroleo">A partir de {formatBRL(r.min_price)}</span>}
-                          {r.offers_pickup && (
-                            <span className={cn("inline-flex items-center gap-1 rounded-full bg-agua-50 px-2 py-0.5 font-semibold text-petroleo")}>
-                              <Bike className="h-3 w-3" aria-hidden /> Coleta e entrega
-                            </span>
-                          )}
-                          {r.accepts_direct_payment && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-nevoa px-2 py-0.5 font-semibold text-grafite-500">
-                              <Wallet className="h-3 w-3" aria-hidden /> Pagamento direto
-                            </span>
-                          )}
-                        </div>
-                      </Card>
-                    </Link>
+                  <li key={r.id} className="flex">
+                    <ProviderCard r={r} />
                   </li>
                 ))}
               </ul>

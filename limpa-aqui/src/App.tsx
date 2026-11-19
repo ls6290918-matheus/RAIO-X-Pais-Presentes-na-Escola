@@ -40,6 +40,8 @@ import ProviderPage from "@/features/marketplace/ProviderPage";
 import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
 import ListingPage from "@/features/client/ListingPage";
 import PayPage from "@/features/client/PayPage";
+import ClientHome from "@/features/client/ClientHome";
+import ClientOrdersPage from "@/features/client/ClientOrdersPage";
 import PlanPage from "@/features/plan/PlanPage";
 import CourierPage from "@/features/courier/CourierPage";
 import NotFound from "@/pages/NotFound";
@@ -107,7 +109,9 @@ export default function App() {
               <Route path="/entregas" element={<RequireAuth><CourierPage /></RequireAuth>} />
               <Route path="/cliente/pagar/:id" element={<RequireAuth><RequireRole role="anunciante"><PayPage /></RequireRole></RequireAuth>} />
               <Route path="/cliente/anuncios/:id" element={<RequireAuth><RequireRole role="anunciante"><ListingPage /></RequireRole></RequireAuth>} />
-              <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
+              <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientHome /></RequireRole></RequireAuth>} />
+              <Route path="/cliente/pedidos" element={<RequireAuth><RequireRole role="anunciante"><ClientOrdersPage /></RequireRole></RequireAuth>} />
+              <Route path="/cliente/conta" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
               <Route
                 path="/admin"
                 element={

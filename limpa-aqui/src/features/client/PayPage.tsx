@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, QrCode } from "lucide-react";
 import { Alert, Card, EmptyState, InlineLoader, PageHeader, buttonClass } from "@/components/shared/ui";
-import { SimpleLayout } from "@/components/layout/SimpleLayout";
+import { ClientShell } from "./ClientShell";
 import { PixCheckout } from "@/components/shared/PixCheckout";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
@@ -43,27 +43,27 @@ export default function PayPage() {
 
   if (order === undefined)
     return (
-      <SimpleLayout>
+      <ClientShell>
         <InlineLoader />
-      </SimpleLayout>
+      </ClientShell>
     );
 
   if (order === null || order.payment_mode !== "app")
     return (
-      <SimpleLayout>
+      <ClientShell>
         <div className="space-y-6">
           {back}
           <Card>
             <EmptyState icon={<QrCode className="h-6 w-6" />} title="Nada para pagar aqui" description="Este pedido não é pago pelo app ou não está na sua conta." />
           </Card>
         </div>
-      </SimpleLayout>
+      </ClientShell>
     );
 
   const total = Number(order.total) + Number(order.delivery_fee_total ?? 0);
 
   return (
-    <SimpleLayout>
+    <ClientShell>
       <div className="mx-auto max-w-lg space-y-6">
         {back}
         <PageHeader title={`Pagar pedido nº ${order.number}`} description={`${order.business_name} · ${formatBRL(total)}`} />
@@ -75,7 +75,7 @@ export default function PayPage() {
               Pagamento confirmado!
             </p>
             <p className="mt-1 text-sm text-grafite-500">A lavanderia já foi avisada e o seu pedido começa agora.</p>
-            <Link to="/cliente" className={buttonClass("primary") + " mt-5"}>
+            <Link to="/cliente/pedidos" className={buttonClass("primary") + " mt-5"}>
               Ver meus pedidos
             </Link>
           </Card>
@@ -95,6 +95,6 @@ export default function PayPage() {
           </Card>
         )}
       </div>
-    </SimpleLayout>
+    </ClientShell>
   );
 }

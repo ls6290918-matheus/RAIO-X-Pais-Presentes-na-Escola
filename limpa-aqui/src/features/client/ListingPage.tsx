@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Bike, Clock, Store } from "lucide-react";
 import { Alert, Button, Card, EmptyState, InlineLoader, Modal, PageHeader, cn } from "@/components/shared/ui";
-import { SimpleLayout } from "@/components/layout/SimpleLayout";
+import { ClientShell } from "./ClientShell";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate } from "@/lib/format";
@@ -75,7 +75,7 @@ export default function ListingPage() {
     setBusy(false);
     if (error) return setMsg(friendlyError(error));
     if (payment === "app") return navigate(`/cliente/pagar/${orderId as string}`);
-    navigate("/cliente", { state: { success: `Pronto! Você contratou ${choosing.business_name}. Acompanhe em "Meus pedidos".` } });
+    navigate("/cliente", { state: { success: `Pronto! Você contratou ${choosing.business_name}. Acompanhe em "Pedidos".` } });
   }
 
   async function cancel() {
@@ -87,25 +87,25 @@ export default function ListingPage() {
 
   if (listing === undefined)
     return (
-      <SimpleLayout>
+      <ClientShell>
         <InlineLoader />
-      </SimpleLayout>
+      </ClientShell>
     );
   if (listing === null)
     return (
-      <SimpleLayout>
+      <ClientShell>
         <Card>
           <EmptyState icon={<Store className="h-6 w-6" />} title="Anúncio não encontrado" description="Volte para a sua área de cliente." />
         </Card>
-      </SimpleLayout>
+      </ClientShell>
     );
 
   const open = listing.status === "aberto" && !listing.expired;
 
   return (
-    <SimpleLayout>
+    <ClientShell>
       <div className="space-y-6">
-        <Link to="/cliente" className="inline-flex items-center gap-1 text-sm font-semibold text-petroleo hover:underline">
+        <Link to="/cliente/conta" className="inline-flex items-center gap-1 text-sm font-semibold text-petroleo hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden /> Minha área
         </Link>
         <PageHeader
@@ -186,7 +186,7 @@ export default function ListingPage() {
                       </Button>
                     )}
                     {listing.order_id && p.status === "aceita" && (
-                      <Link to="/cliente" className="text-sm font-semibold text-petroleo hover:underline">
+                      <Link to="/cliente/pedidos" className="text-sm font-semibold text-petroleo hover:underline">
                         Ver em Meus pedidos
                       </Link>
                     )}
@@ -233,6 +233,6 @@ export default function ListingPage() {
           </div>
         </Modal>
       )}
-    </SimpleLayout>
+    </ClientShell>
   );
 }
