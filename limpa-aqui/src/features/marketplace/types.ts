@@ -23,7 +23,7 @@ export type SearchResult = {
 
 export type PublicProvider = Omit<SearchResult, "min_price" | "services_count" | "distance_km"> & {
   opening_hours: Record<string, string> | null;
-  services: Array<{ name: string; description: string | null; price: number; pricing_unit: PricingUnit; category: string | null }>;
+  services: Array<{ id: string; name: string; description: string | null; price: number; pricing_unit: PricingUnit; category: string | null }>;
   areas: string[];
 };
 

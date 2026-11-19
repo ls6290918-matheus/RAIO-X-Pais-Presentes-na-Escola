@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Circle, MapPin, MessageCircle, Navigation, PackageX, Pencil, Store, Truck } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, Textarea, buttonClass, cn } from "@/components/shared/ui";
+import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
@@ -21,7 +22,7 @@ type Detail = Order & {
 };
 
 const DETAIL_COLUMNS =
-  "id, business_id, number, customer_id, status, due_date, total, paid, notes, delivery_type, received_at, ready_at, delivered_at, canceled_at, created_at, " +
+  "id, business_id, number, customer_id, status, due_date, total, paid, notes, delivery_type, received_at, ready_at, delivered_at, canceled_at, created_at, origin, payment_mode, logistics_mode, " +
   `customers(id, name, whatsapp, ${ADDRESS_COLUMNS}), order_items(id, service_id, service_name, description, quantity, unit_price, position, attributes)`;
 
 export default function OrderDetailPage() {
@@ -181,6 +182,13 @@ export default function OrderDetailPage() {
           {late && <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">Atrasado</span>}
         </div>
         <p className="mt-1 text-sm text-grafite-500">Criado em {formatDateTime(order.created_at)}</p>
+        {order.origin === "marketplace" && (
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-xs" data-testid="order-marketplace">
+            <span className="rounded-full bg-petroleo px-2.5 py-1 font-semibold text-agua">Pelo Limpa Aqui</span>
+            {order.payment_mode && <span className="rounded-full bg-nevoa px-2.5 py-1 font-semibold text-grafite-500">{PAYMENT_LABEL[order.payment_mode]}</span>}
+            {order.logistics_mode && <span className="rounded-full bg-nevoa px-2.5 py-1 font-semibold text-grafite-500">{LOGISTICS_LABEL[order.logistics_mode]}</span>}
+          </p>
+        )}
       </div>
 
       {message && <Alert kind={message.kind}>{message.text}</Alert>}

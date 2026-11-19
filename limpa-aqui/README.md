@@ -165,6 +165,24 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
   (`get_public_provider`). Rua, número e WhatsApp nunca saem nessas funções. "Contratar" chega na Etapa 4.
 - Visitantes não leem nenhuma tabela: tudo passa por essas funções (inclusive `public_categories`).
 
+### Marketplace — Etapa 4 (anúncios, propostas e contratação)
+- **Anúncio** (`listings`): o cliente descreve o que precisa (categoria, título, detalhes, endereço, se quer coleta)
+  em "Meus anúncios" (`create_listing`, até 10 abertos, valem 14 dias). Prestadores só veem bairro e município.
+- **Oportunidades** (`/app/oportunidades`, dono): anúncios abertos nos municípios que a lavanderia atende
+  (`provider_open_listings`); **proposta** (`proposals`, uma por lavanderia por anúncio) com valor, prazo, mensagem e
+  se busca/entrega (`send_proposal`, `withdraw_proposal`). Só quem aparece na busca propõe; ninguém vê a proposta do
+  concorrente.
+- **Contratação**, sempre por RPC, mostrando antes de confirmar como os itens vão e voltam e a forma de pagamento:
+  `accept_proposal` (cliente escolhe uma proposta; as outras são recusadas) ou `hire_services` (pelo perfil público,
+  com o preço do catálogo; serviços "sob orçamento" só por anúncio). Ambas usam `marketplace_place_order`, que cria o
+  pedido em `orders` com `origin = marketplace`, `payment_mode` e `logistics_mode`, e liga ou cria a ficha do cliente
+  na lavanderia (`customers.user_id`, ou o mesmo WhatsApp já cadastrado) com o endereço escolhido.
+- Por enquanto: pagamento **direto ao prestador** (pelo app na Etapa 5b) e logística **sem logística** ou
+  **o próprio prestador busca e entrega** (entregadores na Etapa 6). Exige WhatsApp na conta do cliente.
+- O pedido aparece no painel com o selo "Limpa Aqui" e em "Meus pedidos" do cliente com a modalidade.
+- Apagar a conta do cliente apaga os anúncios e mantém o pedido na lavanderia, sem o vínculo
+  (chaves de `orders.listing_id`/`proposal_id` verificadas no fim da operação).
+
 
 
 ## Em produção
@@ -197,6 +215,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    11. `20261127000011_perfis_geografia.sql`
    12. `20261128000012_anunciante.sql`
    13. `20261129000013_marketplace_prestador.sql`
+   14. `20261130000014_contratacao.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -274,7 +293,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **107 de 107 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 23 do marketplace), incluindo isolamento
+Resultado da última execução: **115 de 115 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico e 31 do marketplace), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

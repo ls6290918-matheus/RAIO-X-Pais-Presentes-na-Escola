@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ChevronDown,
+  Inbox,
   LayoutDashboard,
   Search,
   ShieldCheck,
@@ -31,6 +32,8 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
 function useNav(): NavItem[] {
   const { features, configured, hasFeature, role } = useBusiness();
   const items: NavItem[] = [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }];
+  // Anúncios de clientes da região (marketplace) — quem propõe é o dono
+  if (role === "owner") items.push({ to: "/app/oportunidades", label: "Oportunidades", icon: Inbox });
   for (const code of MENU_FEATURES) {
     const f = features.find((x) => x.code === code);
     if (!f) continue;

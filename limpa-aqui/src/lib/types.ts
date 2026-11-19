@@ -47,7 +47,13 @@ export type Order = {
   delivered_at: string | null;
   canceled_at: string | null;
   created_at: string;
+  origin?: "balcao" | "marketplace";
+  payment_mode?: PaymentMode | null;
+  logistics_mode?: LogisticsMode | null;
 };
+
+export type PaymentMode = "direto" | "app";
+export type LogisticsMode = "sem_logistica" | "prestador" | "entregador";
 
 export type OrderItem = {
   id: string;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { CheckCircle2, Circle, MapPin, MessageCircle, Package, Pencil, Plus, Search, Star, Trash2 } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, Modal, PageHeader, Select, buttonClass, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
@@ -10,7 +10,10 @@ import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate, maskPhone, onlyDigits, whatsappLink } from "@/lib/format";
 import { ADDRESS_COLUMNS, formatAddress, type Address } from "@/lib/maps";
 import { STATUS_LABEL, STATUS_STYLE } from "@/features/orders/status";
-import type { OrderStatus } from "@/lib/types";
+import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
+import { ListingModal } from "./ListingModal";
+import { listingStatus, type MyListing } from "./ListingPage";
+import type { LogisticsMode, OrderStatus, PaymentMode } from "@/lib/types";
 
 type UserAddress = Address & {
   id: string;
@@ -30,6 +33,8 @@ type MyOrder = {
   business_name: string;
   business_whatsapp: string | null;
   items: Array<{ name: string; quantity: number; unit_price: number }>;
+  payment_mode: PaymentMode | null;
+  logistics_mode: LogisticsMode | null;
 };
 
 const LABELS = ["Casa", "Trabalho", "Outro"];
@@ -37,24 +42,30 @@ const LABELS = ["Casa", "Trabalho", "Outro"];
 /** /cliente — área de quem contrata: dados, endereços e pedidos. */
 export default function ClientPage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const [listings, setListings] = useState<MyListing[]>([]);
+  const [newListing, setNewListing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<UserAddress[] | null>(null);
   const [orders, setOrders] = useState<MyOrder[]>([]);
-  const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(
+    (location.state as { success?: string } | null)?.success ? { kind: "success", text: (location.state as { success: string }).success } : null,
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<UserAddress | "new" | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [p, a, o] = await Promise.all([
+    const [p, a, o, l] = await Promise.all([
       supabase.from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle(),
       supabase
         .from("user_addresses")
         .select(`id, label, is_default, municipality_id, ${ADDRESS_COLUMNS}, municipality:municipalities(name)`)
         .order("created_at"),
       supabase.rpc("my_orders"),
+      supabase.rpc("my_listings"),
     ]);
     const err = p.error ?? a.error ?? o.error;
     if (err) setMsg({ kind: "error", text: friendlyError(err) });
@@ -63,6 +74,7 @@ export default function ClientPage() {
     setSavedPhone(p.data?.phone ?? null);
     setAddresses((a.data as unknown as UserAddress[]) ?? []);
     setOrders((o.data as MyOrder[]) ?? []);
+    setListings((l.data as MyListing[]) ?? []);
   }, [user]);
 
   useEffect(() => {
@@ -226,6 +238,40 @@ export default function ClientPage() {
           )}
         </Card>
 
+        {/* Anúncios */}
+        <Card className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+            <div>
+              <h2 className="text-base font-semibold text-petroleo">Meus anúncios</h2>
+              <p className="text-xs text-grafite-500">Descreva o que precisa e receba propostas dos prestadores da sua região.</p>
+            </div>
+            <Button className="h-9" onClick={() => setNewListing(true)}>
+              <Plus className="h-4 w-4" aria-hidden /> Publicar anúncio
+            </Button>
+          </div>
+          {listings.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-grafite-500">Nenhum anúncio ainda.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-grafite/5" data-testid="listing-list">
+              {listings.map((l) => (
+                <li key={l.id}>
+                  <Link to={`/cliente/anuncios/${l.id}`} className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-nevoa/60">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-grafite">{l.title}</p>
+                      <p className="text-xs text-grafite-500">
+                        {l.category_name} · {l.municipality_name} · {listingStatus(l)}
+                      </p>
+                    </div>
+                    <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", l.proposals > 0 ? "bg-agua-50 text-petroleo" : "bg-nevoa text-grafite-500")}>
+                      {l.proposals} {l.proposals === 1 ? "proposta" : "propostas"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
         {/* Pedidos */}
         <Card className="overflow-hidden">
           <h2 className="px-5 pt-5 text-base font-semibold text-petroleo">Meus pedidos</h2>
@@ -249,6 +295,8 @@ export default function ClientPage() {
                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-grafite-500">
                     <span>Feito em {formatDate(o.created_at)}</span>
                     <span>Previsão {formatDate(`${o.due_date}T12:00:00`)}</span>
+                    {o.payment_mode && <span>{PAYMENT_LABEL[o.payment_mode]}</span>}
+                    {o.logistics_mode && <span>{LOGISTICS_LABEL[o.logistics_mode]}</span>}
                     <span className="font-semibold text-grafite">{formatBRL(o.total)}</span>
                     {o.business_whatsapp && (
                       <a
@@ -267,6 +315,18 @@ export default function ClientPage() {
           )}
         </Card>
       </div>
+
+      {newListing && (
+        <ListingModal
+          addresses={addresses}
+          onClose={() => setNewListing(false)}
+          onSaved={async () => {
+            setNewListing(false);
+            setMsg({ kind: "success", text: "Anúncio publicado! Os prestadores da sua região já podem mandar propostas." });
+            await load();
+          }}
+        />
+      )}
 
       {editing && (
         <AddressModal

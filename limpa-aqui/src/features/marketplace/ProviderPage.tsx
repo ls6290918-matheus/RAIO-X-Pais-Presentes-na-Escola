@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, Bike, Clock, MapPin, SearchX, Store, Wallet } from "lucide-react";
 import { Button, Card, EmptyState, InlineLoader, buttonClass } from "@/components/shared/ui";
 import { supabase } from "@/lib/supabase";
 import { logoUrl } from "@/lib/logo";
 import { priceLabel } from "@/lib/pricing";
 import { PublicLayout } from "./PublicLayout";
+import { HireModal } from "./HireModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { HOURS_LABEL, PROVIDER_TYPE_LABEL, type PublicProvider } from "./types";
 
 /** /p/:slug — perfil público de um prestador visível no marketplace. */
 export default function ProviderPage() {
   const { slug = "" } = useParams();
   const [p, setP] = useState<PublicProvider | null | undefined>(undefined);
+  const [hiring, setHiring] = useState(false);
+  const { session } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     void supabase.rpc("get_public_provider", { p_slug: slug }).then(({ data }) => setP((data as PublicProvider | null) ?? null));
@@ -81,10 +86,16 @@ export default function ProviderPage() {
           </div>
           {p.public_description && <p className="mt-4 whitespace-pre-line text-sm text-grafite">{p.public_description}</p>}
           <div className="mt-5 rounded-xl bg-nevoa p-4">
-            <Button disabled block>
-              Contratar
-            </Button>
-            <p className="mt-2 text-center text-xs text-grafite-500">A contratação pelo Limpa Aqui chega na próxima atualização.</p>
+            {session ? (
+              <Button block onClick={() => setHiring(true)}>
+                Contratar
+              </Button>
+            ) : (
+              <Link to="/login" state={{ from: location.pathname }} className={buttonClass("primary", true)}>
+                Entrar para contratar
+              </Link>
+            )}
+            <p className="mt-2 text-center text-xs text-grafite-500">Pagamento direto ao prestador. Você confirma tudo antes de enviar o pedido.</p>
           </div>
         </Card>
 
@@ -126,6 +137,7 @@ export default function ProviderPage() {
           )}
         </div>
       </div>
+      {hiring && <HireModal provider={p} onClose={() => setHiring(false)} />}
     </PublicLayout>
   );
 }

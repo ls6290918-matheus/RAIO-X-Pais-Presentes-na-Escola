@@ -35,6 +35,8 @@ import AdminPage from "@/features/admin/AdminPage";
 import ClientPage from "@/features/client/ClientPage";
 import SearchPage from "@/features/marketplace/SearchPage";
 import ProviderPage from "@/features/marketplace/ProviderPage";
+import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
+import ListingPage from "@/features/client/ListingPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -94,6 +96,7 @@ export default function App() {
               />
               <Route path="/buscar" element={<SearchPage />} />
               <Route path="/p/:slug" element={<ProviderPage />} />
+              <Route path="/cliente/anuncios/:id" element={<RequireAuth><RequireRole role="anunciante"><ListingPage /></RequireRole></RequireAuth>} />
               <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
               <Route
                 path="/admin"
@@ -141,6 +144,7 @@ export default function App() {
                 }
               >
                 <Route index element={<DashboardPage />} />
+                <Route path="oportunidades" element={<RequireOwner><OpportunitiesPage /></RequireOwner>} />
                 <Route
                   path="pedidos"
                   element={
