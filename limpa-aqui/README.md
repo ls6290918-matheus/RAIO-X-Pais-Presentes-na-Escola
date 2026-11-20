@@ -5,6 +5,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Nova home do cliente (Etapa 5):** endereço no topo (troca rápida), busca "Qual serviço você precisa hoje?" com sugestões das categorias, 8 categorias com ícones, banners cadastrados em Administração → Banners (só links internos; somem se não houver ativo), mural "Publique o que precisa" com quantidade, prazo e até 5 fotos (bucket privado `listing-photos`; só o cliente, o admin e prestadores da cidade veem), pedidos em andamento e prestadores perto. Barra inferior: Início, Buscar, Pedidos, Perfil.
+
 - **Experiência inspirada na organização do iFood (Etapas 3–4):** cadastro em passos (uma pergunta por tela, barra de progresso, voltar sem perder dados; WhatsApp sem SMS); /comecar com **vários perfis de uma vez** e passo de localização (navegador ou CEP); componentes `StepScreen`, `StepTitle` e `Skeleton`. Plano completo em `docs/auditoria-ux-ifood.md`.
 
 - **PRD Mestre — Fase 1 (fundação):** entrada com 4 opções (contratar, trabalhar de casa, lavanderia/empresa, entregas); assistente filtrado pelo caminho escolhido, com equipamentos, capacidade por dia e experiência para quem trabalha de casa (editáveis em Configurações → Perfil de trabalho); categorias do PRD (tapetes, higienização de calçados) gerenciadas em Administração → Categorias (criar, editar, desativar); "Adicionar outro perfil" no menu da conta. Auditoria em `docs/auditoria-fase0.md`.
@@ -354,6 +356,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    24. `20261210000024_admin_series.sql`
    25. `20261211000025_fundacao_perfis.sql`
    26. `20261212000026_cadastro_whatsapp.sql`
+   27. `20261213000027_home_mural_banners.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -431,7 +434,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **160 de 160 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin e 3 da fundação do PRD Mestre), incluindo isolamento
+Resultado da última execução: **162 de 162 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre e 2 da nova home), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

@@ -8,7 +8,7 @@ const TABS = [
   { to: "/cliente", label: "Início", icon: Home, end: true },
   { to: "/buscar", label: "Buscar", icon: Search, end: false },
   { to: "/cliente/pedidos", label: "Pedidos", icon: Package, end: false },
-  { to: "/cliente/conta", label: "Conta", icon: UserRound, end: false },
+  { to: "/cliente/conta", label: "Perfil", icon: UserRound, end: false },
 ];
 
 /** Barra de navegação do app do cliente (fixa embaixo no celular; no computador, no topo). */

@@ -6,6 +6,8 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate, moneyInput, parseMoney } from "@/lib/format";
+import { loadListingExtras } from "@/lib/listingPhotos";
+import { ListingExtrasView } from "@/features/client/ListingExtrasView";
 
 type Opportunity = {
   id: string;
@@ -31,6 +33,7 @@ const MY_STATUS: Record<string, string> = { enviada: "Proposta enviada", aceita:
 export default function OpportunitiesPage() {
   const { business } = useBusiness();
   const [items, setItems] = useState<Opportunity[] | null>(null);
+  const [extras, setExtras] = useState<Awaited<ReturnType<typeof loadListingExtras>>>(new Map());
   const [market, setMarket] = useState<{ visible: boolean; pickup: boolean } | null>(null);
   const [editing, setEditing] = useState<Opportunity | null>(null);
   const [price, setPrice] = useState("");
@@ -48,7 +51,9 @@ export default function OpportunitiesPage() {
       supabase.from("businesses").select("marketplace_visible, offers_pickup").eq("id", business.id).single(),
     ]);
     if (o.error) setMsg({ kind: "error", text: friendlyError(o.error) });
-    setItems(((o.data as Opportunity[]) ?? []).map((x) => ({ ...x, my_price: x.my_price == null ? null : Number(x.my_price), proposals: Number(x.proposals) })));
+    const list = ((o.data as Opportunity[]) ?? []).map((x) => ({ ...x, my_price: x.my_price == null ? null : Number(x.my_price), proposals: Number(x.proposals) }));
+    setItems(list);
+    setExtras(await loadListingExtras(list.map((x) => x.id)));
     setMarket(b.data ? { visible: b.data.marketplace_visible, pickup: b.data.offers_pickup } : null);
   }, [business]);
 
@@ -155,6 +160,7 @@ export default function OpportunitiesPage() {
                   )}
                 </div>
                 {o.description && <p className="mt-3 text-sm text-grafite">{o.description}</p>}
+                <ListingExtrasView extras={extras.get(o.id)} />
                 {market?.visible && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(!o.my_status || o.my_status === "enviada" || o.my_status === "retirada") && (

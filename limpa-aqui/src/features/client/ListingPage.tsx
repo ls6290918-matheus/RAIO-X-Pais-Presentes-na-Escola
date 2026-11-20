@@ -9,6 +9,8 @@ import { formatBRL, formatDate } from "@/lib/format";
 import { logoUrl } from "@/lib/logo";
 import type { LogisticsMode, PaymentMode } from "@/lib/types";
 import { HireOptions, type CourierQuote } from "./HireOptions";
+import { loadListingExtras } from "@/lib/listingPhotos";
+import { ListingExtrasView } from "./ListingExtrasView";
 
 export type MyListing = {
   id: string;
@@ -48,6 +50,7 @@ export default function ListingPage() {
   const navigate = useNavigate();
   const [listing, setListing] = useState<MyListing | null | undefined>(undefined);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [extras, setExtras] = useState<Awaited<ReturnType<typeof loadListingExtras>>>(new Map());
   const [choosing, setChoosing] = useState<Proposal | null>(null);
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
   const [payment, setPayment] = useState<PaymentMode>("direto");
@@ -61,6 +64,7 @@ export default function ListingPage() {
     const [l, p] = await Promise.all([supabase.rpc("my_listings"), supabase.rpc("listing_proposals", { p_listing_id: id })]);
     setListing(((l.data as MyListing[]) ?? []).find((x) => x.id === id) ?? null);
     setProposals(((p.data as Proposal[]) ?? []).map((x) => ({ ...x, price: Number(x.price) })));
+    setExtras(await loadListingExtras([id]));
   }, [id]);
 
   useEffect(() => {
@@ -120,7 +124,12 @@ export default function ListingPage() {
           }
         />
         {msg && <Alert>{msg}</Alert>}
-        {listing.description && <Card className="p-5 text-sm text-grafite">{listing.description}</Card>}
+        {(listing.description || (() => { const e = extras.get(id); return !!e && (!!e.quantity || !!e.desired_date || e.urls.length > 0); })()) && (
+          <Card className="p-5 text-sm text-grafite">
+            {listing.description}
+            <ListingExtrasView extras={extras.get(id)} />
+          </Card>
+        )}
         {open && (
           <p className="text-xs text-grafite-500">Recebendo propostas até {formatDate(listing.expires_at)}. Escolha uma para contratar.</p>
         )}
