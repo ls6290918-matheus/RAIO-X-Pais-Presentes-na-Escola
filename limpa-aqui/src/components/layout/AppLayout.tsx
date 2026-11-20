@@ -17,11 +17,12 @@ import {
   Gem,
   Package,
   Plus,
-  Users,
   MoreHorizontal,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
+import { useUnreadMessages } from "@/features/chat/Chat";
 import { NotificationBell } from "./NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -38,7 +39,10 @@ type NavItem = { to: string; label: string; icon: LucideIcon; soon?: boolean };
  */
 function useNav(): NavItem[] {
   const { features, configured, hasFeature, role, blockedByPlan } = useBusiness();
-  const items: NavItem[] = [{ to: "/app", label: "Dashboard", icon: LayoutDashboard }];
+  const items: NavItem[] = [
+    { to: "/app", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/app/mensagens", label: "Mensagens", icon: MessageCircle },
+  ];
   // Anúncios de clientes da região (marketplace) — quem propõe é o dono
   if (role === "owner") items.push({ to: "/app/oportunidades", label: "Oportunidades", icon: Inbox });
   for (const code of MENU_FEATURES) {
@@ -257,11 +261,12 @@ export function AppLayout() {
   );
 }
 
-/** Barra inferior do app do prestador no celular (Painel, Pedidos, Novo pedido, Clientes, Mais). */
+/** Barra inferior do app do prestador no celular (Painel, Pedidos, Novo pedido, Mensagens, Mais). */
 function ProviderTabBar({ onMore }: { onMore: () => void }) {
   const { hasFeature } = useBusiness();
   const orders = hasFeature("pedidos");
-  const clients = hasFeature("clientes");
+  const { business } = useBusiness();
+  const unread = useUnreadMessages(business?.id ?? null);
   const item = (active: boolean) => cn("flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", active ? "text-agua-600" : "text-grafite-500");
   return (
     <nav aria-label="Navegação do prestador" className="fixed inset-x-0 bottom-0 z-30 border-t border-grafite/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" data-testid="provider-tabbar">
@@ -290,15 +295,17 @@ function ProviderTabBar({ onMore }: { onMore: () => void }) {
           )}
         </li>
         <li>
-          {clients ? (
-            <NavLink to="/app/clientes" className={({ isActive }) => item(isActive)}>
-              <Users className="h-5 w-5" aria-hidden /> Clientes
-            </NavLink>
-          ) : (
-            <span className={cn(item(false), "opacity-40")}>
-              <Users className="h-5 w-5" aria-hidden /> Clientes
+          <NavLink to="/app/mensagens" className={({ isActive }) => item(isActive)} data-testid="tab-mensagens">
+            <span className="relative">
+              <MessageCircle className="h-5 w-5" aria-hidden />
+              {unread > 0 && (
+                <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white" aria-label={`${unread} não lidas`}>
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
             </span>
-          )}
+            Mensagens
+          </NavLink>
         </li>
         <li>
           <button type="button" onClick={onMore} className={cn(item(false), "w-full")}>

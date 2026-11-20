@@ -11,6 +11,7 @@ import type { LogisticsMode, PaymentMode } from "@/lib/types";
 import { HireOptions, type CourierQuote } from "./HireOptions";
 import { loadListingExtras } from "@/lib/listingPhotos";
 import { ListingExtrasView } from "./ListingExtrasView";
+import { ChatButton } from "@/features/chat/Chat";
 
 export type MyListing = {
   id: string;
@@ -175,6 +176,10 @@ export default function ListingPage() {
                     <span className="text-xs text-grafite-500">
                       {p.status === "aceita" ? "Proposta aceita" : p.status === "recusada" ? "Não escolhida" : `Recebida em ${formatDate(p.created_at)}`}
                     </span>
+                    <div className="flex flex-wrap gap-2">
+                    {(p.status === "enviada" || p.status === "aceita") && (
+                      <ChatButton kind="proposta" args={{ proposalId: p.id }} basePath="/cliente/mensagens" />
+                    )}
                     {open && p.status === "enviada" && (
                       <Button
                         onClick={() => {
@@ -194,6 +199,7 @@ export default function ListingPage() {
                         Aceitar proposta
                       </Button>
                     )}
+                    </div>
                     {listing.order_id && p.status === "aceita" && (
                       <Link to="/cliente/pedidos" className="text-sm font-semibold text-petroleo hover:underline">
                         Ver em Meus pedidos

@@ -8,6 +8,7 @@ import { friendlyError } from "@/lib/errors";
 import { formatBRL, formatDate, moneyInput, parseMoney } from "@/lib/format";
 import { loadListingExtras } from "@/lib/listingPhotos";
 import { ListingExtrasView } from "@/features/client/ListingExtrasView";
+import { ChatButton } from "@/features/chat/Chat";
 
 type Opportunity = {
   id: string;
@@ -173,6 +174,7 @@ export default function OpportunitiesPage() {
                         Retirar
                       </Button>
                     )}
+                    {business && <ChatButton kind="anuncio" args={{ listingId: o.id, businessId: business.id }} basePath="/app/mensagens" label="Perguntar ao cliente" />}
                   </div>
                 )}
               </Card>

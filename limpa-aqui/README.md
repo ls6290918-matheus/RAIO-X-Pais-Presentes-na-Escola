@@ -5,6 +5,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Chat (PRD Fase 2):** conversas em tempo real entre cliente e prestador, por anúncio (o prestador pergunta em Oportunidades; o cliente fala com quem mandou proposta) ou por pedido do marketplace. Texto e foto (bucket privado `chat-images`), não lidas na aba Mensagens (cliente e prestador), aviso no sino (um por conversa), bloquear (só quem bloqueou desbloqueia) e denunciar; o admin lê só conversas denunciadas (Administração → Denúncias). Mensagens só entram por RPC; a tabela `messages` está na publicação do Supabase Realtime e respeita a RLS.
+
 - **Nova home do cliente (Etapa 5):** endereço no topo (troca rápida), busca "Qual serviço você precisa hoje?" com sugestões das categorias, 8 categorias com ícones, banners cadastrados em Administração → Banners (só links internos; somem se não houver ativo), mural "Publique o que precisa" com quantidade, prazo e até 5 fotos (bucket privado `listing-photos`; só o cliente, o admin e prestadores da cidade veem), pedidos em andamento e prestadores perto. Barra inferior: Início, Buscar, Pedidos, Perfil.
 
 - **Experiência inspirada na organização do iFood (Etapas 3–4):** cadastro em passos (uma pergunta por tela, barra de progresso, voltar sem perder dados; WhatsApp sem SMS); /comecar com **vários perfis de uma vez** e passo de localização (navegador ou CEP); componentes `StepScreen`, `StepTitle` e `Skeleton`. Plano completo em `docs/auditoria-ux-ifood.md`.
@@ -357,6 +359,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    25. `20261211000025_fundacao_perfis.sql`
    26. `20261212000026_cadastro_whatsapp.sql`
    27. `20261213000027_home_mural_banners.sql`
+   28. `20261214000028_chat.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -434,7 +437,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **162 de 162 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre e 2 da nova home), incluindo isolamento
+Resultado da última execução: **165 de 165 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home e 3 do chat), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

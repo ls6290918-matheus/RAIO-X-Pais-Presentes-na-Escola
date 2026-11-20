@@ -17,6 +17,7 @@ import { type ItemDraft, draftsFromItems, formatAttributes, formatQty, itemsPayl
 import { type Address, ADDRESS_COLUMNS, formatAddress, hasAddress, mapsLink } from "@/lib/maps";
 import { NEXT_STEPS, OPEN_STATUSES, canCancel, whatsappMessage } from "./status";
 import { StatusBadge } from "./StatusBadge";
+import { ChatButton } from "@/features/chat/Chat";
 
 type Detail = Order & {
   customers: ({ id: string; name: string; whatsapp: string | null } & Address) | null;
@@ -190,6 +191,11 @@ export default function OrderDetailPage() {
             {order.payment_mode && <span className="rounded-full bg-nevoa px-2.5 py-1 font-semibold text-grafite-500">{PAYMENT_LABEL[order.payment_mode]}</span>}
             {order.logistics_mode && <span className="rounded-full bg-nevoa px-2.5 py-1 font-semibold text-grafite-500">{LOGISTICS_LABEL[order.logistics_mode]}</span>}
           </p>
+        )}
+        {order.origin === "marketplace" && (
+          <div className="mt-3">
+            <ChatButton kind="pedido" args={{ orderId: order.id }} basePath="/app/mensagens" label="Conversar com o cliente" />
+          </div>
         )}
       </div>
 

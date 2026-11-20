@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Home, Package, Search, UserRound } from "lucide-react";
+import { Home, MessageCircle, Package, Search, UserRound } from "lucide-react";
+import { useUnreadMessages } from "@/features/chat/Chat";
 import { Logo, cn } from "@/components/shared/ui";
 import { UserMenu } from "@/components/layout/AppLayout";
 
@@ -8,11 +9,13 @@ const TABS = [
   { to: "/cliente", label: "Início", icon: Home, end: true },
   { to: "/buscar", label: "Buscar", icon: Search, end: false },
   { to: "/cliente/pedidos", label: "Pedidos", icon: Package, end: false },
+  { to: "/cliente/mensagens", label: "Mensagens", icon: MessageCircle, end: false },
   { to: "/cliente/conta", label: "Perfil", icon: UserRound, end: false },
 ];
 
 /** Barra de navegação do app do cliente (fixa embaixo no celular; no computador, no topo). */
 export function ClientTabBar({ className }: { className?: string }) {
+  const unread = useUnreadMessages(null);
   return (
     <nav
       aria-label="Navegação do cliente"
@@ -22,7 +25,7 @@ export function ClientTabBar({ className }: { className?: string }) {
       )}
       data-testid="client-tabbar"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+      <ul className="mx-auto grid max-w-md grid-cols-5">
         {TABS.map(({ to, label, icon: Icon, end }) => (
           <li key={to}>
             <NavLink
@@ -32,7 +35,14 @@ export function ClientTabBar({ className }: { className?: string }) {
                 cn("flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold", isActive ? "text-agua-600" : "text-grafite-500")
               }
             >
-              <Icon className="h-5 w-5" aria-hidden />
+              <span className="relative">
+                <Icon className="h-5 w-5" aria-hidden />
+                {to === "/cliente/mensagens" && unread > 0 && (
+                  <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white" aria-label={`${unread} não lidas`}>
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </span>
               {label}
             </NavLink>
           </li>

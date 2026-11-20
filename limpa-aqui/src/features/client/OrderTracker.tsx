@@ -5,6 +5,7 @@ import { formatBRL, formatDate, whatsappLink } from "@/lib/format";
 import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
 import { OrderDeliveriesCard } from "@/features/orders/OrderDeliveriesCard";
 import type { MyOrder } from "./clientTypes";
+import { ChatButton } from "@/features/chat/Chat";
 
 const STEPS = [
   { key: "recebido", label: "Recebido" },
@@ -103,6 +104,11 @@ export function OrderCard({ order: o }: { order: MyOrder }) {
         )}
       </div>
 
+      {o.status !== "cancelado" && (
+        <div className="mt-3">
+          <ChatButton kind="pedido" args={{ orderId: o.id }} basePath="/cliente/mensagens" label="Falar com a lavanderia" />
+        </div>
+      )}
       {pix && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 p-3">
           <span className="flex-1 text-sm font-semibold text-amber-800">Aguardando pagamento: o pedido começa depois do Pix.</span>

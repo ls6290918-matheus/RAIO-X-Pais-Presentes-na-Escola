@@ -45,6 +45,7 @@ import ClientOrdersPage from "@/features/client/ClientOrdersPage";
 import PlanPage from "@/features/plan/PlanPage";
 import CourierPage from "@/features/courier/CourierPage";
 import LandingPage from "@/features/landing/LandingPage";
+import { ClientMessagesPage, ProviderMessagesPage } from "@/features/chat/ChatPages";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -112,6 +113,8 @@ export default function App() {
               <Route path="/cliente" element={<RequireAuth><RequireRole role="anunciante"><ClientHome /></RequireRole></RequireAuth>} />
               <Route path="/cliente/pedidos" element={<RequireAuth><RequireRole role="anunciante"><ClientOrdersPage /></RequireRole></RequireAuth>} />
               <Route path="/cliente/conta" element={<RequireAuth><RequireRole role="anunciante"><ClientPage /></RequireRole></RequireAuth>} />
+              <Route path="/cliente/mensagens" element={<RequireAuth><RequireRole role="anunciante"><ClientMessagesPage /></RequireRole></RequireAuth>} />
+              <Route path="/cliente/mensagens/:id" element={<RequireAuth><RequireRole role="anunciante"><ClientMessagesPage /></RequireRole></RequireAuth>} />
               <Route
                 path="/admin"
                 element={
@@ -159,6 +162,8 @@ export default function App() {
               >
                 <Route index element={<DashboardPage />} />
                 <Route path="oportunidades" element={<RequireOwner><OpportunitiesPage /></RequireOwner>} />
+                <Route path="mensagens" element={<ProviderMessagesPage />} />
+                <Route path="mensagens/:id" element={<ProviderMessagesPage />} />
                 <Route
                   path="pedidos"
                   element={
