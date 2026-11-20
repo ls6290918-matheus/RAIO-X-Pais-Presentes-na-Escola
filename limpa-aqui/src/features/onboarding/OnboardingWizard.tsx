@@ -1,11 +1,14 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, CloudOff, Loader2, Pencil, Plus, Sparkles, X } from "lucide-react";
-import { Alert, Button, Card, FullScreenLoader, Input, Logo, cn } from "@/components/shared/ui";
+import { Alert, Button, Card, FullScreenLoader, Input, Logo, Textarea, cn } from "@/components/shared/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { formatAddress } from "@/lib/maps";
 import {
+  BUSINESS_SITUATIONS,
+  EQUIPMENT,
+  HOME_SITUATIONS,
   OPERATIONS,
   SEGMENT_LABEL,
   SITUATIONS,
@@ -148,6 +151,16 @@ export default function OnboardingWizard({ mode }: { mode: WizardMode }) {
   const [address, setAddress] = useState<ReturnType<typeof addressFromDraft> | null>(null);
   const addressForm = address ?? addressFromDraft(answers.draft);
   const needsSlug = mode === "criar";
+  // Caminho escolhido na entrada (/comecar): "casa" (trabalhar de casa) ou "lavanderia" (lavanderia ou empresa)
+  const [params] = useSearchParams();
+  const path = params.get("perfil");
+  const situations =
+    path === "casa" && (!answers.situation || HOME_SITUATIONS.includes(answers.situation))
+      ? SITUATIONS.filter((x) => HOME_SITUATIONS.includes(x.value))
+      : path === "lavanderia" && (!answers.situation || BUSINESS_SITUATIONS.includes(answers.situation))
+        ? SITUATIONS.filter((x) => BUSINESS_SITUATIONS.includes(x.value))
+        : SITUATIONS;
+  const atHome = answers.situation !== null && HOME_SITUATIONS.includes(answers.situation);
 
   const segment = previewSegment(answers);
   const featureCodes = useMemo(() => previewFeatures(answers, catalog.rules), [answers, catalog.rules]);
@@ -240,8 +253,19 @@ export default function OnboardingWizard({ mode }: { mode: WizardMode }) {
           subtitle="Assim montamos um painel do seu tamanho. Você pode mudar depois."
         />
         <div className="space-y-3" role="radiogroup" aria-label="Sua situação">
-          {SITUATIONS.map(({ value, label, hint, icon: Icon }) => (
-            <ChoiceCard key={value} selected={answers.situation === value} onClick={() => setAnswers({ situation: value })} icon={<Icon className="h-5 w-5" />}>
+          {situations.map(({ value, label, hint, icon: Icon }) => (
+            <ChoiceCard
+              key={value}
+              selected={answers.situation === value}
+              onClick={() =>
+                setAnswers((a) => ({
+                  situation: value,
+                  // quem trabalha de casa já começa com "Trabalho em casa" marcado
+                  operations: HOME_SITUATIONS.includes(value) && !a.operations.includes("trabalho_em_casa") ? [...a.operations, "trabalho_em_casa"] : a.operations,
+                }))
+              }
+              icon={<Icon className="h-5 w-5" />}
+            >
               <span className="block text-[15px] font-semibold text-petroleo">{label}</span>
               <span className="block text-xs text-grafite-500">{hint}</span>
             </ChoiceCard>
@@ -335,6 +359,69 @@ export default function OnboardingWizard({ mode }: { mode: WizardMode }) {
             </ChoiceCard>
           ))}
         </div>
+        {atHome && (
+          <div className="mt-8 space-y-6 rounded-2xl border border-agua/40 bg-agua-50/40 p-4 sm:p-5" data-testid="work-profile">
+            <div>
+              <p className="text-sm font-semibold text-petroleo">Seu trabalho de casa</p>
+              <p className="text-xs text-grafite-500">Ajuda os clientes a confiar em você. Tudo opcional e editável depois.</p>
+            </div>
+            <fieldset>
+              <legend className="mb-2.5 text-sm font-semibold text-petroleo">Equipamentos que você tem</legend>
+              <div className="flex flex-wrap gap-2">
+                {EQUIPMENT.map((e) => {
+                  const on = (answers.draft.equipment ?? []).includes(e.value);
+                  return (
+                    <button
+                      key={e.value}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      onClick={() => setDraft({ equipment: toggle(answers.draft.equipment ?? [], e.value) })}
+                      className={cn(
+                        "rounded-full border-2 px-3.5 py-1.5 text-sm font-medium transition",
+                        on ? "border-agua bg-agua-50 text-petroleo" : "border-grafite/10 bg-white text-grafite hover:border-grafite/25",
+                      )}
+                    >
+                      {e.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <div>
+              <label htmlFor="capacity" className="text-sm font-semibold text-petroleo">
+                Quantos pedidos você consegue atender por dia?
+              </label>
+              <Input
+                id="capacity"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={1000}
+                className="mt-2 w-32"
+                value={answers.draft.daily_capacity ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value === "" ? null : Math.max(1, Math.min(1000, Math.round(Number(e.target.value))));
+                  setDraft({ daily_capacity: Number.isFinite(v as number) ? v : null });
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="experience" className="text-sm font-semibold text-petroleo">
+                Sua experiência
+              </label>
+              <Textarea
+                id="experience"
+                className="mt-2"
+                rows={3}
+                maxLength={300}
+                placeholder="Ex.: Lavo tênis há 3 anos, com cuidado com camurça e tecidos delicados."
+                value={answers.draft.experience ?? ""}
+                onChange={(e) => setDraft({ experience: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
       </>
     );
   }

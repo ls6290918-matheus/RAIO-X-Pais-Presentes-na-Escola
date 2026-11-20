@@ -9,6 +9,7 @@ import { PUBLIC_DOMAIN, maskPhone, onlyDigits } from "@/lib/format";
 import { fieldErrors } from "@/features/auth/schemas";
 import { CategoriesFeaturesCard } from "./CategoriesFeaturesCard";
 import { MarketplaceCard } from "./MarketplaceCard";
+import { WorkProfileCard } from "./WorkProfileCard";
 import { HoursEditor, LogoPicker } from "@/features/onboarding/IdentityStep";
 import type { OpeningHours } from "@/features/onboarding/catalog";
 
@@ -203,6 +204,8 @@ export default function SettingsPage() {
       </form>
 
       <MarketplaceCard />
+
+      <WorkProfileCard />
 
       <CategoriesFeaturesCard />
     </div>

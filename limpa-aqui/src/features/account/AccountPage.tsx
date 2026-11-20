@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { Bike, Plus, Search, ShieldCheck, Store } from "lucide-react";
-import { Alert, Button, Card, PageHeader, buttonClass, cn } from "@/components/shared/ui";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bike, Home, Plus, Search, ShieldCheck, Store } from "lucide-react";
+import { Alert, Card, PageHeader, buttonClass, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -24,17 +24,21 @@ export default function AccountPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
   const firstName = String(user?.user_metadata?.full_name ?? "").split(" ")[0];
+  const navigate = useNavigate();
+  const location = useLocation();
+  // "Adicionar outro perfil" no menu da conta leva direto ao cartão
+  useEffect(() => {
+    if (location.hash === "#adicionar") window.setTimeout(() => document.getElementById("adicionar")?.scrollIntoView({ behavior: "smooth" }), 50);
+  }, [location.hash]);
 
-  async function add(role: "anunciante" | "prestador" | "entregador") {
-    setBusy(role);
+  /** Acrescenta o perfil e já leva para o cadastro dele (mesmas 4 entradas de /comecar). */
+  async function add(key: string, role: "anunciante" | "prestador" | "entregador", to: string) {
+    setBusy(key);
     setMsg(null);
     const err = await addRole(role);
     setBusy(null);
     if (err) return setMsg({ kind: "error", text: err });
-    setMsg({
-      kind: "success",
-      text: role === "entregador" ? "Pedido enviado. A administração vai analisar seu cadastro de entregador." : `Perfil "${ROLE_LABEL[role]}" adicionado.`,
-    });
+    navigate(to);
   }
 
   function body(role: UserRole, status: RoleStatus): ReactNode {
@@ -92,7 +96,12 @@ export default function AccountPage() {
     }
   }
 
-  const missing = (["anunciante", "prestador", "entregador"] as const).filter((r) => !statusOf(r));
+  const addOptions = [
+    { key: "contratar", role: "anunciante" as const, title: "Contratar serviços", text: "Pedir lavagens e receber propostas.", icon: <Search className="h-4 w-4" />, to: "/cliente" },
+    { key: "casa", role: "prestador" as const, title: "Trabalhar de casa", text: "Oferecer lavagens sem precisar de loja nem CNPJ.", icon: <Home className="h-4 w-4" />, to: "/onboarding?perfil=casa" },
+    { key: "lavanderia", role: "prestador" as const, title: "Lavanderia ou empresa", text: "Receber pedidos e organizar a operação.", icon: <Store className="h-4 w-4" />, to: "/onboarding?perfil=lavanderia" },
+    { key: "entregas", role: "entregador" as const, title: "Trabalhar com entregas", text: "Coletas e devoluções; passa por aprovação.", icon: <Bike className="h-4 w-4" />, to: "/entregas" },
+  ].filter((o) => !statusOf(o.role));
   const order: UserRole[] = ["admin", "prestador", "anunciante", "entregador"];
 
   return (
@@ -128,18 +137,35 @@ export default function AccountPage() {
             );
           })}
 
-        {missing.length > 0 && (
+        {addOptions.length > 0 && (
+          <div id="adicionar" className="scroll-mt-20" data-testid="add-profile">
           <Card className="p-5">
             <h2 className="text-base font-semibold text-petroleo">Acrescentar perfil</h2>
-            <p className="mt-1 text-sm text-grafite-500">Uma mesma conta pode contratar, oferecer serviços e fazer entregas.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {missing.map((r) => (
-                <Button key={r} variant="outline" loading={busy === r} disabled={busy !== null} onClick={() => void add(r)}>
-                  <Plus className="h-4 w-4" aria-hidden /> {ROLE_LABEL[r]}
-                </Button>
+            <p className="mt-1 text-sm text-grafite-500">Uma mesma conta pode contratar, trabalhar de casa ou com uma lavanderia e fazer entregas.</p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {addOptions.map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void add(o.key, o.role, o.to)}
+                  className={cn(
+                    "flex items-start gap-3 rounded-2xl border border-grafite/10 p-4 text-left transition hover:border-agua disabled:opacity-60",
+                    busy === o.key && "animate-pulse",
+                  )}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-agua-50 text-petroleo">{o.icon}</span>
+                  <span>
+                    <span className="flex items-center gap-1 text-sm font-semibold text-petroleo">
+                      <Plus className="h-3.5 w-3.5" aria-hidden /> {o.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-grafite-500">{o.text}</span>
+                  </span>
+                </button>
               ))}
             </div>
           </Card>
+          </div>
         )}
       </div>
     </SimpleLayout>

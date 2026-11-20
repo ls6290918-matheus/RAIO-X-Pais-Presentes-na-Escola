@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet, QrCode, Gem, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet, QrCode, Gem, Tags, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AdminDashboard } from "./AdminDashboard";
 import { AdminLogistics } from "./AdminLogistics";
 import { AdminPayments } from "./AdminPayments";
 import { AdminPlans } from "./AdminPlans";
+import { AdminCategories } from "./AdminCategories";
 import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, Logo, Select, StatCard, cn } from "@/components/shared/ui";
 import { UserMenu } from "@/components/layout/AppLayout";
@@ -30,10 +31,11 @@ type Courier = {
 
 const MUN_LABEL: Record<MunStatus, string> = { cadastrado: "Só cadastro", ativo: "Operação ativa", suspenso: "Suspenso" };
 const ROLE_STATUS_LABEL: Record<RoleStatus, string> = { pendente: "Aguardando", ativo: "Aprovado", suspenso: "Suspenso" };
-type Tab = "painel" | "municipios" | "entregadores" | "logistica" | "financeiro" | "pagamentos" | "planos";
+type Tab = "painel" | "municipios" | "categorias" | "entregadores" | "logistica" | "financeiro" | "pagamentos" | "planos";
 const NAV: Array<[Tab, string, LucideIcon, string]> = [
   ["painel", "Painel", LayoutDashboard, "Indicadores, gráficos e pedidos do período"],
   ["municipios", "Municípios", MapPin, "Onde o Limpa Aqui opera no estado do RJ"],
+  ["categorias", "Categorias", Tags, "Serviços que aparecem na busca, nos anúncios e no cadastro"],
   ["entregadores", "Entregadores", Bike, "Aprovação de quem faz coleta e entrega"],
   ["logistica", "Logística", Truck, "Zonas, tarifas e corridas"],
   ["financeiro", "Financeiro", Wallet, "Comissões, cobranças e regras"],
@@ -210,6 +212,8 @@ export default function AdminPage() {
           <AdminPayments />
         ) : tab === "planos" ? (
           <AdminPlans />
+        ) : tab === "categorias" ? (
+          <AdminCategories />
         ) : tab === "municipios" ? (
           <Card className="overflow-hidden">
             <div className="flex flex-col gap-3 p-4 sm:flex-row">

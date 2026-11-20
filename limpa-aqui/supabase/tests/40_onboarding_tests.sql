@@ -9,7 +9,7 @@ reset role;
 -- T38: catálogo e RLS
 do $$ begin
   assert not exists (select 1 from public.tables_without_rls()), 'T38 há tabela sem RLS';
-  assert (select count(*) from public.service_categories) = 13, 'T38 categorias';
+  assert (select count(*) from public.service_categories) >= 13, 'T38 categorias';
   assert (select count(*) from public.service_templates) >= 15, 'T38 sugestões';
   assert exists (select 1 from public.feature_rules where trigger_type = 'categoria' and trigger_value = 'lavagem_tenis' and feature_code = 'campos_calcado'), 'T38 regra tênis';
   raise notice 'T38 OK  catálogo com 13 categorias, sugestões e regras; RLS em todas as tabelas';

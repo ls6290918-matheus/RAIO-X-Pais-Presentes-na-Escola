@@ -5,6 +5,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **PRD Mestre — Fase 1 (fundação):** entrada com 4 opções (contratar, trabalhar de casa, lavanderia/empresa, entregas); assistente filtrado pelo caminho escolhido, com equipamentos, capacidade por dia e experiência para quem trabalha de casa (editáveis em Configurações → Perfil de trabalho); categorias do PRD (tapetes, higienização de calçados) gerenciadas em Administração → Categorias (criar, editar, desativar); "Adicionar outro perfil" no menu da conta. Auditoria em `docs/auditoria-fase0.md`.
+
 - **Site institucional** em `/` (`src/features/landing/LandingPage.tsx`): capa, quem somos, serviços (levam à busca já filtrada), como funciona em 4 passos, área para lavanderias e entregadores e rodapé com os dados da empresa. Mostra quantos municípios já têm atendimento real.
 
 ### Etapa 1 — Fundação
@@ -348,6 +350,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    22. `20261208000022_avisos.sql`
    23. `20261209000023_painel_prestador.sql`
    24. `20261210000024_admin_series.sql`
+   25. `20261211000025_fundacao_perfis.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -425,7 +428,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **157 de 157 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador e 1 dos gráficos do admin), incluindo isolamento
+Resultado da última execução: **159 de 159 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin e 2 da fundação do PRD Mestre), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

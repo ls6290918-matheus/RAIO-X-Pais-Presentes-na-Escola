@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { featureIcon } from "@/lib/featureMeta";
 
-type Category = { code: string; name: string; sort: number };
+type Category = { code: string; name: string; sort: number; active: boolean };
 type BizCategory = { id: string; category_code: string | null; custom_name: string | null; active: boolean; source: "regra" | "manual" };
 
 function Switch({ on, disabled, onChange, label }: { on: boolean; disabled?: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -46,7 +46,7 @@ export function CategoriesFeaturesCard() {
   const load = useCallback(async () => {
     if (!business) return;
     const [c, r] = await Promise.all([
-      supabase.from("service_categories").select("code, name, sort").order("sort"),
+      supabase.from("service_categories").select("code, name, sort, active").order("sort"),
       supabase.from("business_categories").select("id, category_code, custom_name, active, source").eq("business_id", business.id),
     ]);
     setCatalog((c.data as Category[]) ?? []);
@@ -147,7 +147,7 @@ export function CategoriesFeaturesCard() {
           Serviços que você oferece
         </h3>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {catalog.map((c) => {
+          {catalog.filter((c) => c.active || rows.some((r) => r.category_code === c.code && r.active)).map((c) => {
             const on = !!rows.find((r) => r.category_code === c.code && r.active);
             return (
               <li key={c.code} className="flex items-center justify-between gap-3 rounded-xl border border-grafite/10 px-3.5 py-2.5">

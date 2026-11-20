@@ -26,7 +26,7 @@ const schema = z.object({
   categoryCode: z.string(),
 });
 
-type Category = { code: string; name: string; pricing_units: PricingUnit[] };
+type Category = { code: string; name: string; pricing_units: PricingUnit[]; active: boolean };
 type Template = { category_code: string; name: string; pricing_unit: PricingUnit };
 
 /** Preço: obrigatório, exceto "sob orçamento" (vazio = definido em cada pedido). */
@@ -113,7 +113,7 @@ function ServiceForm({
         <Field label="Categoria" htmlFor="s-cat">
           <Select id="s-cat" value={form.categoryCode} onChange={(e) => setForm((f) => ({ ...f, categoryCode: e.target.value }))}>
             <option value="">Sem categoria</option>
-            {categories.map((c) => (
+            {categories.filter((c) => c.active || c.code === form.categoryCode).map((c) => (
               <option key={c.code} value={c.code}>
                 {c.name}
               </option>
@@ -215,7 +215,7 @@ export default function ServicesPage() {
     if (!business) return;
     void (async () => {
       const [c, bc] = await Promise.all([
-        supabase.from("service_categories").select("code, name, pricing_units").order("sort"),
+        supabase.from("service_categories").select("code, name, pricing_units, active").order("sort"),
         supabase.from("business_categories").select("category_code").eq("business_id", business.id).eq("active", true).not("category_code", "is", null),
       ]);
       setCategories((c.data as Category[]) ?? []);

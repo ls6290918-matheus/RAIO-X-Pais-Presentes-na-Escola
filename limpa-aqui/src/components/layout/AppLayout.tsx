@@ -144,6 +144,7 @@ export function UserMenu() {
           <Link role="menuitem" to="/buscar" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
             <MapPin className="h-4 w-4" aria-hidden /> Buscar prestadores
           </Link>
+          <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-grafite-500">Trocar de perfil</p>
           {hasRole("anunciante") && (
             <Link role="menuitem" to="/cliente" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
               <Search className="h-4 w-4" aria-hidden /> Contratar serviços
@@ -162,6 +163,17 @@ export function UserMenu() {
           {hasRole("admin") && (
             <Link role="menuitem" to="/admin" onClick={() => setOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-grafite hover:bg-nevoa">
               <ShieldCheck className="h-4 w-4" aria-hidden /> Administração
+            </Link>
+          )}
+          {(!hasRole("anunciante") || !statusOf("prestador") || !statusOf("entregador")) && (
+            <Link
+              role="menuitem"
+              to="/conta#adicionar"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-agua-600 hover:bg-nevoa"
+              data-testid="menu-add-profile"
+            >
+              <Plus className="h-4 w-4" aria-hidden /> Adicionar outro perfil
             </Link>
           )}
           <div className="my-1 border-t border-grafite/5" />

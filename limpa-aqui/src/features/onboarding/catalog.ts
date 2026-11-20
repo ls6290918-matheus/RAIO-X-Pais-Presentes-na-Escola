@@ -40,6 +40,10 @@ export type Draft = {
   service_region?: string;
   opening_hours?: OpeningHours;
   logo_path?: string | null;
+  /** Perfil de trabalho de quem atende de casa (vai para a lavanderia ao concluir) */
+  equipment?: string[];
+  daily_capacity?: number | null;
+  experience?: string;
 };
 
 export type Answers = {
@@ -75,6 +79,25 @@ export const SITUATIONS: Array<{ value: Situation; label: string; hint: string; 
   { value: "autonomo", label: "Já trabalho como autônomo", hint: "Atendo clientes por conta própria.", icon: User },
   { value: "lavanderia", label: "Tenho uma lavanderia", hint: "Tenho um ponto ou uma operação montada.", icon: Store },
   { value: "empresa_limpeza", label: "Tenho uma empresa de limpeza e higienização", hint: "Atendo com equipe e vários serviços.", icon: Building2 },
+];
+
+/** Quem trabalha de casa (PRD: "Quero trabalhar de casa") */
+export const HOME_SITUATIONS: Situation[] = ["comecar_em_casa", "autonomo"];
+/** Quem tem estrutura (PRD: "Tenho uma lavanderia ou empresa") */
+export const BUSINESS_SITUATIONS: Situation[] = ["lavanderia", "empresa_limpeza"];
+
+/** Equipamentos (mesma lista aceita pelo banco em businesses.equipment) */
+export const EQUIPMENT: Array<{ value: string; label: string }> = [
+  { value: "maquina_lavar", label: "Máquina de lavar" },
+  { value: "tanquinho", label: "Tanquinho" },
+  { value: "secadora", label: "Secadora" },
+  { value: "centrifuga", label: "Centrífuga" },
+  { value: "ferro_passar", label: "Ferro de passar" },
+  { value: "vaporizador", label: "Vaporizador" },
+  { value: "extratora", label: "Extratora (estofados)" },
+  { value: "aspirador", label: "Aspirador" },
+  { value: "kit_tenis", label: "Kit para tênis (escovas e produtos)" },
+  { value: "varal_amplo", label: "Varal / área de secagem ampla" },
 ];
 
 export const OPERATIONS: Array<{ value: string; label: string; icon: LucideIcon; exclusiveWith?: string }> = [

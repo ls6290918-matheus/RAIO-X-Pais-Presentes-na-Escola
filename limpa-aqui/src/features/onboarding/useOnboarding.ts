@@ -88,11 +88,12 @@ export function useOnboarding(mode: WizardMode) {
     (async () => {
       const [profile, cats, feats, rules] = await Promise.all([
         supabase.from("onboarding_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-        supabase.from("service_categories").select("code, name, group_code, sort").order("sort"),
+        supabase.from("service_categories").select("code, name, group_code, sort, active").order("sort"),
         supabase.from("features").select("code, name, description, status, sort").order("sort"),
         supabase.from("feature_rules").select("trigger_type, trigger_value, feature_code"),
       ]);
       if (cancelled) return;
+      const p0 = profile.data as { categories?: string[] } | null;
       const err = profile.error ?? cats.error ?? feats.error ?? rules.error;
       if (err) {
         setLoadError(friendlyError(err));
@@ -100,7 +101,10 @@ export function useOnboarding(mode: WizardMode) {
         return;
       }
       setCatalog({
-        categories: (cats.data as CatalogCategory[]) ?? [],
+        // categorias desativadas pelo admin não aparecem para escolher (as já marcadas continuam)
+        categories: ((cats.data as Array<CatalogCategory & { active: boolean }>) ?? []).filter(
+          (c) => c.active || (p0?.categories ?? []).includes(c.code),
+        ),
         features: (feats.data as CatalogFeature[]) ?? [],
         rules: (rules.data as CatalogRule[]) ?? [],
       });
@@ -194,8 +198,19 @@ export function useOnboarding(mode: WizardMode) {
   const complete = useCallback(async () => {
     const err = await save(6);
     if (err) return err;
-    const { error } = await supabase.rpc("complete_onboarding");
+    const { data: businessId, error } = await supabase.rpc("complete_onboarding");
     if (error) return friendlyError(error);
+    // perfil de trabalho (quem atende de casa): equipamentos, capacidade e experiência
+    const d = answersRef.current.draft;
+    if (businessId && ((d.equipment?.length ?? 0) > 0 || d.daily_capacity || d.experience?.trim())) {
+      const w = await supabase.rpc("set_work_profile", {
+        p_business_id: businessId as string,
+        p_equipment: d.equipment ?? [],
+        p_daily_capacity: d.daily_capacity ?? null,
+        p_experience: d.experience ?? null,
+      });
+      if (w.error) return friendlyError(w.error);
+    }
     await refresh();
     return null;
   }, [save, refresh]);
