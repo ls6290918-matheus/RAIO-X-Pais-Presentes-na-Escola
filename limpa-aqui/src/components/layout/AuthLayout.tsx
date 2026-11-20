@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import { ClipboardList, Link2, Wallet } from "lucide-react";
+import { Bike, Search, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/shared/ui";
 
 const highlights = [
-  { icon: ClipboardList, text: "Pedidos com vários pares, fotos e status em um só lugar" },
-  { icon: Link2, text: "Link de acompanhamento para o seu cliente, sem cadastro" },
-  { icon: Wallet, text: "Recebido, pendente e faturado sempre separados" },
+  { icon: Search, text: "Contrate quem lava roupas, tênis, tapetes e estofados perto de você" },
+  { icon: Store, text: "Trabalhe de casa ou com sua lavanderia e receba novos pedidos" },
+  { icon: Bike, text: "Faça coletas e devoluções e ganhe por corrida" },
 ];
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
@@ -20,9 +20,9 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         <Logo light />
         <div className="relative max-w-md">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            Sua lavanderia mais organizada.
+            Lavar ficou simples.
             <br />
-            <span className="text-agua">Seu negócio em outro nível.</span>
+            <span className="text-agua">Para quem contrata e para quem trabalha.</span>
           </h2>
           <ul className="mt-8 space-y-4">
             {highlights.map(({ icon: Icon, text }) => (

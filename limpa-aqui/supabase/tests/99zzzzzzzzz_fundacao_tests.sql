@@ -63,3 +63,15 @@ do $$ begin
   raise notice 'T159 OK  perfil de trabalho: equipamentos válidos sem repetição, capacidade e experiência; só o dono';
 end $$;
 reset role;
+
+-- T160: WhatsApp do cadastro vai para o perfil (só 10–11 dígitos; inválido é ignorado sem impedir a conta)
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('26262626-0000-0000-0000-000000000026', 'zap@teste.com', '{"full_name":"Zé Zap","phone":"(21) 98888-7777","terms_version":"2026-11-19"}'),
+  ('27272727-0000-0000-0000-000000000027', 'zap2@teste.com', '{"full_name":"Sem Zap","phone":"123"}');
+do $$ begin
+  assert (select phone from public.profiles where id = '26262626-0000-0000-0000-000000000026') = '21988887777', 'T160 telefone';
+  assert (select terms_version from public.profiles where id = '26262626-0000-0000-0000-000000000026') = '2026-11-19', 'T160 termos';
+  assert (select phone from public.profiles where id = '27272727-0000-0000-0000-000000000027') is null, 'T160 inválido ignorado';
+  raise notice 'T160 OK  cadastro em passos: WhatsApp informado vai para o perfil; número inválido não impede a conta';
+end $$;
