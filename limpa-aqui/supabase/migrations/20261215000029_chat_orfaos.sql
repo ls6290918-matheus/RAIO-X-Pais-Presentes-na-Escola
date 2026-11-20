@@ -11,6 +11,13 @@ begin
     return;
   end if;
   execute 'drop policy if exists chat_images_orphan_remove on storage.objects';
+  execute 'drop policy if exists chat_images_orphan_read on storage.objects';
+  -- a API de armazenamento precisa enxergar o arquivo para apagá-lo
+  execute $p$
+    create policy chat_images_orphan_read on storage.objects for select to authenticated
+      using (bucket_id = 'chat-images' and owner_id = auth.uid()::text
+             and not exists (select 1 from public.conversations c where c.id = public.business_of_path(name)))
+  $p$;
   execute $p$
     create policy chat_images_orphan_remove on storage.objects for delete to authenticated
       using (bucket_id = 'chat-images' and owner_id = auth.uid()::text
