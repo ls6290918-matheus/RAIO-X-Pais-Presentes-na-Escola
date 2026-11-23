@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet, QrCode, Gem, Tags, Image as ImageIcon, Flag, Scale, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Bike, CheckCircle2, LayoutDashboard, MapPin, Search, Store, Truck, Wallet, QrCode, Gem, Tags, Image as ImageIcon, Flag, Scale, Users, Package, Megaphone, TicketPercent, ScrollText, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AdminDashboard } from "./AdminDashboard";
 import { AdminLogistics } from "./AdminLogistics";
@@ -9,6 +9,8 @@ import { AdminCategories } from "./AdminCategories";
 import { AdminBanners } from "./AdminBanners";
 import { AdminReports } from "./AdminReports";
 import { AdminDisputes } from "./AdminDisputes";
+import { AdminAudit, AdminListings, AdminOrders, AdminUsers } from "./AdminLists";
+import { AdminCoupons } from "./AdminCoupons";
 import { AdminFinance } from "./AdminFinance";
 import { Alert, Button, Card, InlineLoader, Input, Logo, Select, StatCard, cn } from "@/components/shared/ui";
 import { UserMenu } from "@/components/layout/AppLayout";
@@ -34,9 +36,13 @@ type Courier = {
 
 const MUN_LABEL: Record<MunStatus, string> = { cadastrado: "Só cadastro", ativo: "Operação ativa", suspenso: "Suspenso" };
 const ROLE_STATUS_LABEL: Record<RoleStatus, string> = { pendente: "Aguardando", ativo: "Aprovado", suspenso: "Suspenso" };
-type Tab = "painel" | "municipios" | "categorias" | "banners" | "disputas" | "denuncias" | "entregadores" | "logistica" | "financeiro" | "pagamentos" | "planos";
+type Tab = "painel" | "usuarios" | "pedidos" | "anuncios" | "cupons" | "auditoria" | "municipios" | "categorias" | "banners" | "disputas" | "denuncias" | "entregadores" | "logistica" | "financeiro" | "pagamentos" | "planos";
 const NAV: Array<[Tab, string, LucideIcon, string]> = [
   ["painel", "Painel", LayoutDashboard, "Indicadores, gráficos e pedidos do período"],
+  ["usuarios", "Usuários", Users, "Contas, perfis e situação de cada pessoa"],
+  ["pedidos", "Pedidos", Package, "Todos os pedidos, com histórico e corridas"],
+  ["anuncios", "Anúncios", Megaphone, "Anúncios do mural e moderação"],
+  ["cupons", "Cupons", TicketPercent, "Descontos pagos pela plataforma nos pedidos pelo app"],
   ["municipios", "Municípios", MapPin, "Onde o Limpa Aqui opera no estado do RJ"],
   ["categorias", "Categorias", Tags, "Serviços que aparecem na busca, nos anúncios e no cadastro"],
   ["banners", "Banners", ImageIcon, "Destaques que aparecem no Início do cliente"],
@@ -47,6 +53,7 @@ const NAV: Array<[Tab, string, LucideIcon, string]> = [
   ["financeiro", "Financeiro", Wallet, "Comissões, cobranças e regras"],
   ["pagamentos", "Pagamentos pelo app", QrCode, "Pix pela SyncPay, repasses e devoluções"],
   ["planos", "Planos", Gem, "Planos e assinaturas dos prestadores"],
+  ["auditoria", "Auditoria", ScrollText, "Tudo o que os administradores alteraram"],
 ];
 
 /** Moldura do /admin: menu lateral petróleo no computador e abas roláveis no celular. */
@@ -225,6 +232,16 @@ export default function AdminPage() {
           <AdminCategories />
         ) : tab === "banners" ? (
           <AdminBanners />
+        ) : tab === "usuarios" ? (
+          <AdminUsers />
+        ) : tab === "pedidos" ? (
+          <AdminOrders />
+        ) : tab === "anuncios" ? (
+          <AdminListings />
+        ) : tab === "cupons" ? (
+          <AdminCoupons />
+        ) : tab === "auditoria" ? (
+          <AdminAudit />
         ) : tab === "disputas" ? (
           <AdminDisputes />
         ) : tab === "denuncias" ? (

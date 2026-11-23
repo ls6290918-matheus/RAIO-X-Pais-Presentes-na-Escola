@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, QrCode } from "lucide-react";
-import { Alert, Card, EmptyState, InlineLoader, PageHeader, buttonClass } from "@/components/shared/ui";
+import { ArrowLeft, CheckCircle2, QrCode, TicketPercent, X } from "lucide-react";
+import { Alert, Button, Card, EmptyState, InlineLoader, Input, PageHeader, buttonClass } from "@/components/shared/ui";
 import { ClientShell } from "./ClientShell";
 import { PixCheckout } from "@/components/shared/PixCheckout";
 import { supabase } from "@/lib/supabase";
@@ -16,17 +16,39 @@ export default function PayPage() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<MyOrder | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<{ code: string | null; discount: number; full_amount: number; amount: number } | null>(null);
+  const [code, setCode] = useState("");
+  const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [pixKey, setPixKey] = useState(0);
 
   const loadOrder = useCallback(async () => {
     const { data } = await supabase.rpc("my_orders");
     const o = ((data as MyOrder[]) ?? []).find((x) => x.id === id) ?? null;
     setOrder(o);
+    if (o) {
+      const c = await supabase.rpc("order_coupon", { p_order_id: id });
+      setCoupon((c.data as typeof coupon) ?? null);
+    }
     return Boolean(o?.paid);
   }, [id]);
 
   useEffect(() => {
     void loadOrder();
   }, [loadOrder]);
+
+  async function applyCoupon(remove = false) {
+    setCouponBusy(true);
+    setCouponMsg(null);
+    const { error: err } = remove
+      ? await supabase.rpc("remove_coupon", { p_order_id: id })
+      : await supabase.rpc("apply_coupon", { p_order_id: id, p_code: code });
+    setCouponBusy(false);
+    if (err) return setCouponMsg(friendlyError(err));
+    setCode("");
+    await loadOrder();
+    setPixKey((k) => k + 1); // o Pix é gerado de novo com o valor certo
+  }
 
   async function cancel() {
     if (!window.confirm("Cancelar este pedido? Se você já pagou, não cancele: aguarde a confirmação.")) return;
@@ -60,7 +82,7 @@ export default function PayPage() {
       </ClientShell>
     );
 
-  const total = Number(order.total) + Number(order.delivery_fee_total ?? 0);
+  const total = coupon ? Number(coupon.amount) : Number(order.total) + Number(order.delivery_fee_total ?? 0);
 
   return (
     <ClientShell>
@@ -83,7 +105,30 @@ export default function PayPage() {
           <Card className="p-6 text-sm text-grafite-500">Este pedido foi cancelado.</Card>
         ) : (
           <Card className="space-y-4 p-6">
+            <div className="rounded-xl bg-nevoa p-3" data-testid="coupon-box">
+              {coupon?.code ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <TicketPercent className="h-4 w-4 shrink-0 text-agua-600" aria-hidden />
+                  <span className="flex-1 text-grafite">
+                    Cupom <strong className="font-mono">{coupon.code}</strong>: −{formatBRL(Number(coupon.discount))}{" "}
+                    <span className="text-grafite-500 line-through">{formatBRL(Number(coupon.full_amount))}</span>
+                  </span>
+                  <button type="button" disabled={couponBusy} onClick={() => void applyCoupon(true)} className="rounded-lg p-1.5 text-grafite-500 hover:bg-white" aria-label="Remover cupom">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Tem um cupom?" aria-label="Código do cupom" maxLength={20} className="bg-white" />
+                  <Button variant="outline" className="shrink-0" loading={couponBusy} disabled={code.trim().length < 3} onClick={() => void applyCoupon()}>
+                    Aplicar
+                  </Button>
+                </div>
+              )}
+              {couponMsg && <p className="mt-2 text-xs font-semibold text-red-700">{couponMsg}</p>}
+            </div>
             <PixCheckout
+              key={pixKey}
               kind="order"
               id={id}
               onRefresh={loadOrder}

@@ -155,8 +155,12 @@ export function Alert({ kind = "error", children }: { kind?: "error" | "success"
 }
 
 /* ------------------------------------------------------------------ Card */
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("rounded-2xl border border-grafite/5 bg-white shadow-card", className)}>{children}</div>;
+export function Card({ className, children, ...rest }: { className?: string; children: ReactNode } & Omit<React.HTMLAttributes<HTMLDivElement>, "className" | "children">) {
+  return (
+    <div className={cn("rounded-2xl border border-grafite/5 bg-white shadow-card", className)} {...rest}>
+      {children}
+    </div>
+  );
 }
 
 export function StatCard({

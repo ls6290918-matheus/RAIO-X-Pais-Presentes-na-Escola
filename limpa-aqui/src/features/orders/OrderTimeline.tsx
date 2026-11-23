@@ -30,6 +30,7 @@ export type StageInfo = {
   can_confirm: boolean;
   can_dispute: boolean;
   dispute: Dispute | null;
+  discount_amount: number;
 };
 export type DisputeReason = "nao_recebido" | "dano" | "item_faltando" | "qualidade" | "cobranca" | "atraso" | "outro";
 

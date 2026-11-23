@@ -10,7 +10,9 @@ create schema auth;
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
   email text unique,
-  raw_user_meta_data jsonb default '{}'::jsonb
+  raw_user_meta_data jsonb default '{}'::jsonb,
+  created_at timestamptz default now(),
+  last_sign_in_at timestamptz
 );
 
 create function auth.uid() returns uuid

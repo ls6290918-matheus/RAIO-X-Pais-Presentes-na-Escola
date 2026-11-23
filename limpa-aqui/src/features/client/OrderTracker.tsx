@@ -22,7 +22,7 @@ const STEPS = [
 ] as const;
 
 const awaitingPix = (o: MyOrder) => o.payment_mode === "app" && !o.paid && o.status !== "cancelado";
-const grandTotal = (o: MyOrder) => Number(o.total) + Number(o.delivery_fee_total ?? 0);
+const grandTotal = (o: MyOrder, discount = 0) => Number(o.total) + Number(o.delivery_fee_total ?? 0) - Number(discount ?? 0);
 
 /** Etapas do pedido (Recebido → Lavando → Pronto → Entregue), no estilo de acompanhamento do app. */
 export function OrderSteps({ order, dark = false }: { order: MyOrder; dark?: boolean }) {
@@ -100,7 +100,7 @@ export function OrderCard({ order: o, review, onReview, stage, onChanged }: { or
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <span className="text-base font-semibold text-petroleo">{formatBRL(grandTotal(o))}</span>
+          <span className="text-base font-semibold text-petroleo">{formatBRL(grandTotal(o, stage?.discount_amount))}</span>
           <StageBadge stage={stageOf(o, stage)} />
         </div>
       </div>
@@ -165,7 +165,7 @@ export function OrderCard({ order: o, review, onReview, stage, onChanged }: { or
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 p-3">
           <span className="flex-1 text-sm font-semibold text-amber-800">Aguardando pagamento: o pedido começa depois do Pix.</span>
           <Link to={`/cliente/pagar/${o.id}`} className={buttonClass("primary")}>
-            <QrCode className="h-4 w-4" aria-hidden /> Pagar {formatBRL(grandTotal(o))}
+            <QrCode className="h-4 w-4" aria-hidden /> Pagar {formatBRL(grandTotal(o, stage?.discount_amount))}
           </Link>
         </div>
       )}
