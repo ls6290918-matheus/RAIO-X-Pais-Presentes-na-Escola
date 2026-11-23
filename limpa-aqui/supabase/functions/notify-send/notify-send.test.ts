@@ -112,7 +112,7 @@ Deno.test("erro de conteúdo (INVALID_ARGUMENT que não é do token) não desati
 Deno.test("sem FCM configurado: registra falha clara (o banco avisa o admin na 3ª)", async () => {
   const w = fakeWorld([{ id: "a", token: "ok-1" }]);
   const out = await (await createHandler(env(null), w.f)(req({ delivery_id: DELIVERY }))).json();
-  assert(out.result === "falhou" && w.calls.results[0].p_error === "fcm_nao_configurado", "falha registrada");
+  assert(out.result === "falhou" && w.calls.results[0].p_error === "fcm_segredo_ausente", "falha registrada");
   assert(w.calls.fcm.length === 0, "nada enviado");
 });
 
@@ -129,4 +129,33 @@ Deno.test("pedido inválido e método errado", async () => {
   const h = createHandler(env(sa), w.f);
   assert((await h(req({ delivery_id: "nao-e-uuid" }))).status === 400, "uuid inválido");
   assert((await h(new Request("http://x", { method: "GET" }))).status === 405, "GET");
+});
+
+Deno.test("lê a chave colada com aspas, em base64 ou como texto; diz o que está errado", async () => {
+  const { readServiceAccount } = await import("./fcm.ts");
+  const { sa } = await makeServiceAccount();
+  const raw = JSON.stringify(sa);
+  assert("sa" in readServiceAccount(`  ${raw}\n`), "com espaços");
+  assert("sa" in readServiceAccount(`'${raw}'`), "com aspas simples");
+  assert("sa" in readServiceAccount(btoa(raw)), "em base64");
+  assert("sa" in readServiceAccount(JSON.stringify(raw)), "JSON dentro de texto");
+  const p = (x: string | undefined) => { const r = readServiceAccount(x); return "problem" in r ? r.problem : "ok"; };
+  assert(p(undefined) === "fcm_segredo_ausente", "ausente");
+  assert(p("{ \"project_id\": ") === "fcm_segredo_json_invalido", "cortado");
+  assert(p(JSON.stringify({ project_id: "x" })) === "fcm_segredo_incompleto", "incompleto");
+});
+
+Deno.test("recupera a chave colada com quebras de linha reais no lugar de \\n ou vírgula sobrando", async () => {
+  const { readServiceAccount, Fcm } = await import("./fcm.ts");
+  const { sa, publicKey } = await makeServiceAccount();
+  // quebra de linha real dentro da chave (JSON inválido) + vírgula sobrando no fim
+  const broken = `{\n "type": "service_account",\n "project_id": "${sa.project_id}",\n "private_key": "${sa.private_key}",\n "client_email": "${sa.client_email}",\n}`;
+  const r = readServiceAccount(broken);
+  assert("sa" in r && r.sa.project_id === "limpa-teste" && r.sa.client_email === sa.client_email, "campos recuperados");
+  // a chave recuperada assina de verdade
+  const w = fakeWorld([], { publicKey });
+  const token = await new Fcm((r as { sa: typeof sa }).sa, w.f).accessToken();
+  assert(token === "google-access-token" && w.calls.jwtValid[0] === true, "assina com a chave recuperada");
+  const cut = readServiceAccount(broken.slice(0, 300));
+  assert("problem" in cut && cut.problem === "fcm_segredo_json_invalido" && /^len\d+_abre$/.test(cut.detail ?? ""), "cortada: diz o tamanho");
 });

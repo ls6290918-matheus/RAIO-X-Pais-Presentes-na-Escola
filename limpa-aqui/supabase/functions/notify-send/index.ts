@@ -4,7 +4,7 @@
 //     { retry: true }  → reenvia os pendentes/falhos (até 3 tentativas), chamado pelo pg_cron
 // Segredos da função: FCM_SERVICE_ACCOUNT (JSON da conta de serviço do Firebase) e APP_URL (opcional).
 // Tokens de aparelho e credenciais nunca vão para o log.
-import { Fcm, parseServiceAccount, type SendResult } from "./fcm.ts";
+import { Fcm, readServiceAccount, type SendResult } from "./fcm.ts";
 
 type Env = (name: string) => string | undefined;
 type Payload = {
@@ -22,8 +22,10 @@ export function createHandler(env: Env, fetchImpl: typeof fetch = fetch) {
   const supabaseUrl = env("SUPABASE_URL") ?? "";
   const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const appUrl = (env("APP_URL") ?? "https://limpa-aqui-ls6290918-7294.vercel.app").replace(/\/$/, "");
-  const sa = parseServiceAccount(env("FCM_SERVICE_ACCOUNT"));
-  const fcm = sa ? new Fcm(sa, fetchImpl) : null;
+  const read = readServiceAccount(env("FCM_SERVICE_ACCOUNT"));
+  const fcm = "sa" in read ? new Fcm(read.sa, fetchImpl) : null;
+  // diz o que falta (e só o tamanho/forma do texto), sem expor o conteúdo
+  const configProblem = "problem" in read ? [read.problem, read.detail].filter(Boolean).join(":") : null;
 
   async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
     const bearer = serviceKey.startsWith("sb_") ? null : serviceKey;
@@ -41,7 +43,7 @@ export function createHandler(env: Env, fetchImpl: typeof fetch = fetch) {
     const p = await rpc<Payload | null>("notify_delivery_payload", { p_delivery_id: id });
     if (!p) return "ignorado"; // já tratado, em uso ou esgotado
     if (!fcm) {
-      await rpc("notify_delivery_result", { p_delivery_id: id, p_status: "falhou", p_error: "fcm_nao_configurado" });
+      await rpc("notify_delivery_result", { p_delivery_id: id, p_status: "falhou", p_error: configProblem ?? "fcm_nao_configurado" });
       return "falhou";
     }
     if (p.tokens.length === 0) {

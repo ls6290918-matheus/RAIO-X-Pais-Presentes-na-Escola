@@ -20,13 +20,58 @@ function pemToDer(pem: string): ArrayBuffer {
   return Uint8Array.from(atob(body), (c) => c.charCodeAt(0)).buffer as ArrayBuffer;
 }
 
-export function parseServiceAccount(raw: string | undefined | null): ServiceAccount | null {
-  if (!raw) return null;
+export type ServiceAccountProblem = "fcm_segredo_ausente" | "fcm_segredo_json_invalido" | "fcm_segredo_incompleto";
+
+/** Reconstrói a chave privada no formato PEM a partir de qualquer texto que contenha o bloco BEGIN/END. */
+function rebuildPem(text: string): string | null {
+  const m = text.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
+  if (!m) return null;
+  const b64 = m[1].replace(/\\n|\\r|[^A-Za-z0-9+/=]/g, "");
+  if (b64.length < 100) return null;
+  return `-----BEGIN PRIVATE KEY-----\n${b64.match(/.{1,64}/g)!.join("\n")}\n-----END PRIVATE KEY-----\n`;
+}
+
+/** Plano B: tira os 3 campos necessários direto do texto (colagem com quebras de linha trocadas, vírgula sobrando etc.). */
+function salvage(text: string): ServiceAccount | null {
+  const field = (name: string) => text.match(new RegExp(`["“”]${name}["“”]\\s*:\\s*["“”]([^"“”]+)["“”]`))?.[1]?.trim();
+  const project_id = field("project_id");
+  const client_email = field("client_email");
+  const private_key = rebuildPem(text);
+  return project_id && client_email && private_key ? { project_id, client_email, private_key } : null;
+}
+
+/** Só a forma do texto (tamanho e começo/fim), para diagnosticar colagem cortada sem expor o conteúdo. */
+const shape = (t: string) => `len${t.length}${t.startsWith("{") ? "_abre" : ""}${t.endsWith("}") ? "_fecha" : ""}`;
+
+/** Lê a conta de serviço; tolera erros comuns de colagem (espaços, aspas em volta, base64, quebras de linha). */
+export function readServiceAccount(raw: string | undefined | null): { sa: ServiceAccount } | { problem: ServiceAccountProblem; detail?: string } {
+  let text = (raw ?? "").trim();
+  if (!text) return { problem: "fcm_segredo_ausente" };
+  if ((text.startsWith("'") && text.endsWith("'")) || (text.startsWith('"') && text.endsWith('"') && !text.startsWith('"{'))) text = text.slice(1, -1).trim();
+  if (!text.startsWith("{")) {
+    try {
+      const decoded = atob(text.replace(/\s/g, ""));
+      if (decoded.trim().startsWith("{")) text = decoded.trim();
+    } catch { /* não é base64 */ }
+  }
+  let sa: unknown;
   try {
-    const sa = JSON.parse(raw);
-    if (typeof sa?.project_id === "string" && typeof sa?.client_email === "string" && typeof sa?.private_key === "string") return sa;
-  } catch { /* JSON inválido */ }
-  return null;
+    sa = JSON.parse(text);
+    if (typeof sa === "string") sa = JSON.parse(sa); // JSON colado como texto entre aspas
+  } catch {
+    const rescued = salvage(text);
+    return rescued ? { sa: rescued } : { problem: "fcm_segredo_json_invalido", detail: shape(text) };
+  }
+  const o = sa as Record<string, unknown>;
+  if (typeof o?.project_id !== "string" || typeof o?.client_email !== "string" || typeof o?.private_key !== "string" || !o.private_key.includes("PRIVATE KEY")) {
+    return { problem: "fcm_segredo_incompleto", detail: shape(text) };
+  }
+  return { sa: o as unknown as ServiceAccount };
+}
+
+export function parseServiceAccount(raw: string | undefined | null): ServiceAccount | null {
+  const r = readServiceAccount(raw);
+  return "sa" in r ? r.sa : null;
 }
 
 export class Fcm {
