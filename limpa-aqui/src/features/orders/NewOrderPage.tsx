@@ -18,6 +18,7 @@ import {
 import { useBusiness } from "@/contexts/BusinessContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
+import { isNetworkError, useIdempotentRequest } from "@/lib/idempotency";
 import { addDaysISO, formatBRL, maskPhone, searchTerm, todayISO } from "@/lib/format";
 import type { Customer, DeliveryType, Service } from "@/lib/types";
 import { formatAddress, hasAddress } from "@/lib/maps";
@@ -190,6 +191,17 @@ export default function NewOrderPage() {
 
   const total = itemsTotal(items);
 
+  // mesmo pedido (mesmo conteúdo) = mesma chave; clique duplo ou nova tentativa não duplicam
+  const payload = {
+    p_customer_id: customer?.id ?? null,
+    p_items: itemsPayload(items),
+    p_due_date: dueDate,
+    p_notes: notes.trim() || null,
+    p_delivery_type: deliveryType,
+    p_as_quote: canQuote && asQuote,
+  };
+  const request = useIdempotentRequest(payload);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
@@ -201,18 +213,20 @@ export default function NewOrderPage() {
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
+    if (!request.begin()) return; // segundo clique enquanto o primeiro ainda está sendo enviado
     setError(null);
     setSaving(true);
-    const { data, error: err } = await supabase.rpc("create_order", {
-      p_customer_id: customer!.id,
-      p_items: itemsPayload(items),
-      p_due_date: dueDate,
-      p_notes: notes.trim() || null,
-      p_delivery_type: deliveryType,
-      p_as_quote: canQuote && asQuote,
-    });
+    const { data, error: err } = await supabase.rpc("create_order", { ...payload, p_request_id: request.key() });
     setSaving(false);
-    if (err) return setError(friendlyError(err));
+    if (err) {
+      request.end();
+      return setError(
+        isNetworkError(err)
+          ? "A conexão falhou antes da confirmação. Envie de novo: o pedido não será duplicado."
+          : friendlyError(err),
+      );
+    }
+    request.done();
     navigate(`/app/pedidos/${data as string}`, { replace: true, state: { created: true } });
   }
 

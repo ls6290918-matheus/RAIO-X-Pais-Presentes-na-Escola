@@ -5,6 +5,7 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Pedidos sem duplicidade (Fase 1):** `hire_services` e `create_order` aceitam `p_request_id` (opcional). A mesma tentativa devolve o pedido original (clique duplo, nova tentativa após queda de rede, duas abas); uma trava por usuário + chave serializa requisições simultâneas e o índice único `(created_by, client_request_id)` é a última defesa. Chamadas sem chave funcionam como antes. Concorrência real: `supabase/tests/concorrencia/idempotencia.sh` (só em banco de teste).
 - **Admin: listas, cupons e auditoria:** abas Usuários (busca por nome, e-mail ou WhatsApp; suspender/reativar perfis), Pedidos (busca, filtros, histórico e corridas), Anúncios (encerrar com motivo, que vai ao cliente) e Auditoria (toda alteração de admin com antes → depois, sem poder apagar). Cupons pagos pela plataforma só em pedidos pelo app: o cliente paga menos no Pix e o repasse da lavanderia não muda; validade, pedido mínimo, teto, usos totais e por pessoa, só 1º pedido; aplicado antes de gerar o Pix.
 - **Comprovantes por corrida:** na coleta o entregador registra foto, quantidade de peças e estado (obrigatório); na entrega, quem recebe passa um código de 4 dígitos que só aparece no app dele (lavanderia na coleta, cliente na devolução). 5 erros bloqueiam o código; sem código, a entrega exige foto e explicação e fica marcada. Quantidade diferente ou avaria avisa lavanderia e cliente. Fotos no bucket privado `delivery-proofs`; os comprovantes aparecem no pedido e na análise de disputas.
 - **Histórico e disputas (PRD seção 8):** cada pedido guarda o histórico (criação, situações, pagamento, corridas, disputas, com quem fez). Etapas "aguardando pagamento", "concluído" (cliente confirma o recebimento, ou 7 dias após a entrega) e "em disputa" são mostradas por cima da situação gravada, sem mudar o enum. Cliente ou dono abrem disputa (até 7 dias após a entrega), a outra parte responde e o admin decide em /admin → Disputas. Com disputa aberta, os repasses do pedido ficam bloqueados (inclusive os criados depois) e não podem ser pagos; a favor do cliente, o Pix vai para devolução e os repasses são cancelados.
@@ -376,6 +377,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    33. `20261219000033_historico_disputas.sql`
    34. `20261220000034_comprovantes_corrida.sql`
    35. `20261221000035_admin_cupons_auditoria.sql`
+   36. `20261222000036_idempotencia_pedidos.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -453,7 +455,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **179 de 179 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda, 1 das avaliações e 4 do histórico e das disputas 3 dos comprovantes de corrida e 4 do admin, cupons e auditoria), incluindo isolamento
+Resultado da última execução: **182 de 182 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda, 1 das avaliações e 4 do histórico e das disputas 3 dos comprovantes de corrida 4 do admin, cupons e auditoria e 3 da idempotência dos pedidos), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

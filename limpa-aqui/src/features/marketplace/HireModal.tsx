@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRoles } from "@/contexts/RolesContext";
 import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
+import { isNetworkError, useIdempotentRequest } from "@/lib/idempotency";
 import { formatBRL } from "@/lib/format";
 import { priceLabel } from "@/lib/pricing";
 import type { LogisticsMode, PaymentMode } from "@/lib/types";
@@ -65,20 +66,33 @@ export function HireModal({ provider, onClose, initialQty }: { provider: PublicP
   const items = Object.entries(qty).filter(([, q]) => q > 0);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(50, (q[id] ?? 0) + d)) }));
 
+  // mesma contratação (mesmo conteúdo) = mesma chave; repetir após falha de rede não duplica o pedido
+  const payload = {
+    p_business_id: provider.id,
+    p_items: items.map(([service_id, quantity]) => ({ service_id, quantity })),
+    p_address_id: addressId,
+    p_logistics: logistics,
+    p_payment: payment,
+    p_notes: notes.trim() || null,
+  };
+  const request = useIdempotentRequest(payload);
+
   async function confirm() {
     setError(null);
     if (!items.length) return setError("Escolha pelo menos um serviço.");
+    if (!request.begin()) return; // segundo clique enquanto o primeiro ainda está sendo enviado
     setBusy(true);
-    const { data: orderId, error: err } = await supabase.rpc("hire_services", {
-      p_business_id: provider.id,
-      p_items: items.map(([service_id, quantity]) => ({ service_id, quantity })),
-      p_address_id: addressId,
-      p_logistics: logistics,
-      p_payment: payment,
-      p_notes: notes.trim() || null,
-    });
+    const { data: orderId, error: err } = await supabase.rpc("hire_services", { ...payload, p_request_id: request.key() });
     setBusy(false);
-    if (err) return setError(friendlyError(err));
+    if (err) {
+      request.end();
+      return setError(
+        isNetworkError(err)
+          ? "A conexão falhou antes da confirmação. Toque em confirmar de novo: o pedido não será duplicado."
+          : friendlyError(err),
+      );
+    }
+    request.done();
     if (payment === "app") return navigate(`/cliente/pagar/${orderId as string}`);
     navigate("/cliente", { state: { success: `Pronto! Seu pedido foi enviado para ${provider.name}. Acompanhe em "Pedidos".` } });
   }
