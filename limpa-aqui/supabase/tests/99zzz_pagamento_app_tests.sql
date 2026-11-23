@@ -182,8 +182,8 @@ begin
   select id into d from public.courier_available_deliveries() where leg = 'pickup';
   assert d is not null, 'T139 coleta liberada após pagamento';
   perform public.accept_delivery(d);
-  perform public.advance_delivery(d, 'coletada');
-  perform public.advance_delivery(d, 'entregue');
+  perform public.delivery_pickup(d, 3, 'ok', (d)::text || '/foto-coleta-0001.jpg');
+  perform public.delivery_dropoff(d, null, 3, 'ok', (d)::text || '/foto-entrega-0001.jpg', 'Recebido no balcão', true);
   assert (select count(*) from public.my_payouts() where status = 'pendente') = 1, 'T139 entregador vê o repasse';
   assert (select count(*) from public.payouts) = 1, 'T139 entregador só vê o próprio';
   raise notice 'T139 OK  com entregador, a coleta só é chamada depois do pagamento; corrida concluída gera repasse ao entregador';

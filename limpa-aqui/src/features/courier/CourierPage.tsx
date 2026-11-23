@@ -9,6 +9,7 @@ import { friendlyError } from "@/lib/errors";
 import { formatBRL, maskPhone, onlyDigits, whatsappLink } from "@/lib/format";
 import { CourierPayouts } from "./CourierPayouts";
 import { RatingBadge } from "@/components/shared/Stars";
+import { ProofModal } from "./DeliveryProofs";
 
 type Vehicle = "bicicleta" | "moto" | "carro";
 type Mun = { id: number; name: string };
@@ -68,6 +69,7 @@ export default function CourierPage() {
   const [rating, setRating] = useState<{ rating: number; count: number } | null>(null);
   const [summary, setSummary] = useState<{ online: boolean; today_rides: number; today_earnings: number; week_rides: number; week_earnings: number; active: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [proof, setProof] = useState<{ id: string; stage: "coleta" | "entrega"; number: number } | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -411,16 +413,16 @@ export default function CourierPage() {
                             </a>
                             {d.status === "aceita" ? (
                               <>
-                                <Button className="h-9" loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("advance_delivery", { p_delivery_id: d.id, p_status: "coletada" }), "Coleta registrada.")}>
-                                  Coletei
+                                <Button className="h-9" onClick={() => setProof({ id: d.id, stage: "coleta", number: d.order_number })} data-testid="proof-pickup">
+                                  Registrar coleta
                                 </Button>
                                 <Button variant="outline" className="h-9" disabled={busy === d.id} onClick={() => window.confirm("Desistir desta corrida? Ela volta para os outros entregadores.") && void run(d.id, () => supabase.rpc("release_delivery", { p_delivery_id: d.id }), "Corrida liberada.")}>
                                   Desistir
                                 </Button>
                               </>
                             ) : (
-                              <Button className="h-9" loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("advance_delivery", { p_delivery_id: d.id, p_status: "entregue" }), "Entrega registrada. Obrigado!")}>
-                                Entreguei
+                              <Button className="h-9" onClick={() => setProof({ id: d.id, stage: "entrega", number: d.order_number })} data-testid="proof-dropoff">
+                                Registrar entrega
                               </Button>
                             )}
                           </div>
@@ -434,6 +436,19 @@ export default function CourierPage() {
           </>
         )}
         {profile && !editing && <CourierPayouts />}
+        {proof && (
+          <ProofModal
+            deliveryId={proof.id}
+            stage={proof.stage}
+            orderNumber={proof.number}
+            onClose={() => setProof(null)}
+            onDone={(text) => {
+              setProof(null);
+              setMsg({ kind: "success", text });
+              void load();
+            }}
+          />
+        )}
       </div>
     </SimpleLayout>
   );

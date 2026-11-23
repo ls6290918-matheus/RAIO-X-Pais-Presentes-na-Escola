@@ -128,16 +128,16 @@ begin
   perform public.accept_delivery((select id from t_log where k = 'pickup'));
   select * into r from public.my_deliveries();
   assert r.status = 'aceita' and r.origin_phone = '21944443333' and r.dest_label like 'Lavanderia do João%', 'T127 contatos depois de aceitar';
-  perform public.advance_delivery((select id from t_log where k = 'pickup'), 'coletada');
+  perform public.delivery_pickup((select id from t_log where k = 'pickup'), 3, 'ok', ((select id from t_log where k = 'pickup'))::text || '/foto-coleta-0001.jpg');
   begin perform public.release_delivery((select id from t_log where k = 'pickup')); raise exception 'T127 FALHOU desistiu após coletar';
   exception when raise_exception then if sqlerrm like 'T127%' then raise; end if; end;
-  perform public.advance_delivery((select id from t_log where k = 'pickup'), 'entregue');
+  perform public.delivery_dropoff((select id from t_log where k = 'pickup'), null, 3, 'ok', ((select id from t_log where k = 'pickup'))::text || '/foto-entrega-0001.jpg', 'Recebido no balcão', true);
 end $$;
 select set_config('request.jwt.claim.sub', '21212121-0000-0000-0000-000000000021', false);
 do $$ begin
   begin perform public.accept_delivery((select id from t_log where k = 'pickup')); raise exception 'T127 FALHOU pegou corrida feita';
   exception when raise_exception then if sqlerrm like 'T127%' then raise; end if; end;
-  begin perform public.advance_delivery((select id from t_log where k = 'pickup'), 'entregue'); raise exception 'T127 FALHOU mexeu na corrida de outro';
+  begin perform public.delivery_dropoff((select id from t_log where k = 'pickup'), null, 3, 'ok', ((select id from t_log where k = 'pickup'))::text || '/foto-entrega-0001.jpg', 'Recebido no balcão', true); raise exception 'T127 FALHOU mexeu na corrida de outro';
   exception when raise_exception then if sqlerrm like 'T127%' then raise; end if; end;
 end $$;
 reset role;
@@ -157,8 +157,8 @@ begin
   select id into d from public.courier_available_deliveries() where leg = 'return';
   assert d is not null, 'T128 devolução criada';
   perform public.accept_delivery(d);
-  perform public.advance_delivery(d, 'coletada');
-  perform public.advance_delivery(d, 'entregue');
+  perform public.delivery_pickup(d, 3, 'ok', (d)::text || '/foto-coleta-0001.jpg');
+  perform public.delivery_dropoff(d, null, 3, 'ok', (d)::text || '/foto-entrega-0001.jpg', 'Recebido no balcão', true);
 end $$;
 select set_config('request.jwt.claim.sub', '18181818-0000-0000-0000-000000000018', false);
 do $$ begin

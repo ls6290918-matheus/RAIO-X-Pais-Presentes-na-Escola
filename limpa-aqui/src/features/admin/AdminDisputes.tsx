@@ -8,6 +8,7 @@ import { PAYMENT_LABEL } from "@/lib/marketplace";
 import { STATUS_LABEL } from "@/features/orders/status";
 import { DISPUTE_REASON, OrderTimeline, RESOLUTION_LABEL, type DisputeReason } from "@/features/orders/OrderTimeline";
 import type { OrderStatus, PaymentMode } from "@/lib/types";
+import { OrderDeliveriesCard } from "@/features/orders/OrderDeliveriesCard";
 
 type Row = {
   id: string;
@@ -143,6 +144,12 @@ export function AdminDisputes() {
               <summary className="cursor-pointer text-sm font-semibold text-petroleo">Histórico do pedido</summary>
               <div className="mt-3">
                 <OrderTimeline orderId={open.order_id} />
+              </div>
+            </details>
+            <details className="rounded-xl border border-grafite/10 p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-petroleo">Corridas e comprovantes (fotos, quantidade, código)</summary>
+              <div className="mt-3">
+                <OrderDeliveriesCard orderId={open.order_id} compact />
               </div>
             </details>
             {open.status === "aberta" ? (
