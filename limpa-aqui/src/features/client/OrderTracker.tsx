@@ -9,6 +9,10 @@ import { ChatButton } from "@/features/chat/Chat";
 import { Star } from "lucide-react";
 import { StarsDisplay } from "@/components/shared/Stars";
 import type { ReviewStatus } from "./ReviewModal";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { friendlyError } from "@/lib/errors";
+import { DisputeModal, DisputePanel, StageBadge, TimelineToggle, stageOf, type StageInfo } from "@/features/orders/OrderTimeline";
 
 const STEPS = [
   { key: "recebido", label: "Recebido" },
@@ -72,8 +76,19 @@ export function ActiveOrderCard({ order }: { order: MyOrder }) {
 }
 
 /** Pedido completo na lista "Pedidos". */
-export function OrderCard({ order: o, review, onReview }: { order: MyOrder; review?: ReviewStatus; onReview?: () => void }) {
+export function OrderCard({ order: o, review, onReview, stage, onChanged }: { order: MyOrder; review?: ReviewStatus; onReview?: () => void; stage?: StageInfo; onChanged?: () => void }) {
   const pix = awaitingPix(o);
+  const [disputing, setDisputing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function confirm() {
+    if (!window.confirm("Confirmar que você recebeu tudo certo? Depois disso o pedido fica concluído e não dá mais para abrir disputa.")) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("confirm_order_received", { p_order_id: o.id });
+    setBusy(false);
+    if (error) return setErr(friendlyError(error));
+    onChanged?.();
+  }
   return (
     <li className="rounded-2xl bg-white p-4 shadow-sm sm:p-5" data-testid="order-card">
       <div className="flex flex-wrap items-start gap-2">
@@ -84,7 +99,10 @@ export function OrderCard({ order: o, review, onReview }: { order: MyOrder; revi
             {o.status !== "cancelado" && o.status !== "entregue" && ` · previsão ${formatDate(`${o.due_date}T12:00:00`)}`}
           </p>
         </div>
-        <span className="text-base font-semibold text-petroleo">{formatBRL(grandTotal(o))}</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-base font-semibold text-petroleo">{formatBRL(grandTotal(o))}</span>
+          <StageBadge stage={stageOf(o, stage)} />
+        </div>
       </div>
 
       {o.status === "cancelado" ? (
@@ -122,6 +140,27 @@ export function OrderCard({ order: o, review, onReview }: { order: MyOrder; revi
             ))}
         </div>
       )}
+      {err && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{err}</p>}
+      {stage?.can_confirm && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-agua-50 p-3" data-testid="confirm-box">
+          <span className="flex-1 text-sm text-petroleo">
+            <strong>Recebeu tudo certo?</strong> Confirme para concluir o pedido. Se algo deu errado, relate o problema.
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setDisputing(true)} className={buttonClass("outline") + " h-9"} data-testid="dispute-open">
+              Relatar problema
+            </button>
+            <button type="button" disabled={busy} onClick={() => void confirm()} className={buttonClass("primary") + " h-9"} data-testid="confirm-received">
+              <Check className="h-4 w-4" aria-hidden /> Confirmar recebimento
+            </button>
+          </div>
+        </div>
+      )}
+      {stage?.dispute && (stage.dispute.status === "aberta" || o.status !== "cancelado") && (
+        <div className="mt-3">
+          <DisputePanel dispute={stage.dispute} viewer="cliente" onChanged={() => onChanged?.()} />
+        </div>
+      )}
       {pix && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-amber-50 p-3">
           <span className="flex-1 text-sm font-semibold text-amber-800">Aguardando pagamento: o pedido começa depois do Pix.</span>
@@ -144,6 +183,26 @@ export function OrderCard({ order: o, review, onReview }: { order: MyOrder; revi
         >
           <MessageCircle className="h-4 w-4" aria-hidden /> Falar com a lavanderia
         </a>
+      )}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-grafite/5 pt-3">
+        <TimelineToggle orderId={o.id} refreshKey={`${o.status}-${o.paid}-${stage?.dispute?.status ?? ""}-${stage?.client_confirmed_at ?? ""}`} />
+        {stage?.can_dispute && !stage.can_confirm && (
+          <button type="button" onClick={() => setDisputing(true)} className="text-xs font-semibold text-grafite-500 hover:text-red-700 hover:underline" data-testid="dispute-open">
+            Relatar um problema
+          </button>
+        )}
+      </div>
+      {disputing && (
+        <DisputeModal
+          orderId={o.id}
+          orderNumber={o.number}
+          side="cliente"
+          onClose={() => setDisputing(false)}
+          onDone={() => {
+            setDisputing(false);
+            onChanged?.();
+          }}
+        />
       )}
     </li>
   );

@@ -18,6 +18,7 @@ import { type Address, ADDRESS_COLUMNS, formatAddress, hasAddress, mapsLink } fr
 import { NEXT_STEPS, OPEN_STATUSES, canCancel, whatsappMessage } from "./status";
 import { StatusBadge } from "./StatusBadge";
 import { ChatButton } from "@/features/chat/Chat";
+import { DisputeModal, DisputePanel, StageBadge, TimelineToggle, loadStageInfo, stageOf, type StageInfo } from "./OrderTimeline";
 
 type Detail = Order & {
   customers: ({ id: string; name: string; whatsapp: string | null } & Address) | null;
@@ -31,7 +32,7 @@ const DETAIL_COLUMNS =
 export default function OrderDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-  const { business, settings, hasFeature } = useBusiness();
+  const { business, settings, hasFeature, role } = useBusiness();
   const [order, setOrder] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(
@@ -43,6 +44,8 @@ export default function OrderDetailPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [editingItems, setEditingItems] = useState<ItemDraft[] | null>(null);
   const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
+  const [stage, setStage] = useState<StageInfo | undefined>(undefined);
+  const [disputing, setDisputing] = useState(false);
 
   // Serviços da lavanderia: unidade de cobrança dos itens e edição do orçamento
   useEffect(() => {
@@ -69,6 +72,7 @@ export default function OrderDetailPage() {
     if (o) {
       setDueDate(o.due_date);
       setNotes(o.notes ?? "");
+      if (o.origin === "marketplace") setStage((await loadStageInfo([o.id])).get(o.id));
     }
     setLoading(false);
   }, [id]);
@@ -182,6 +186,7 @@ export default function OrderDetailPage() {
             {isQuote ? "Orçamento" : "Pedido"} #{order.number}
           </h1>
           <StatusBadge status={order.status} />
+          <StageBadge stage={stageOf(order, stage)} />
           {late && <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">Atrasado</span>}
         </div>
         <p className="mt-1 text-sm text-grafite-500">Criado em {formatDateTime(order.created_at)}</p>
@@ -200,6 +205,13 @@ export default function OrderDetailPage() {
       </div>
 
       {message && <Alert kind={message.kind}>{message.text}</Alert>}
+
+      {stage?.dispute && <DisputePanel dispute={stage.dispute} viewer="prestador" onChanged={() => void load()} />}
+      {stage?.client_confirmed_at && (
+        <p className="rounded-xl bg-agua-50 px-4 py-3 text-sm text-petroleo" data-testid="order-concluded">
+          O cliente confirmou o recebimento em {formatDateTime(stage.client_confirmed_at)}. Pedido concluído.
+        </p>
+      )}
 
       {order.payment_mode === "app" && !order.paid && order.status !== "cancelado" && (
         <Alert>Aguardando o Pix do cliente. O pedido só pode avançar depois que o pagamento for confirmado.</Alert>
@@ -425,9 +437,29 @@ export default function OrderDetailPage() {
                 <li className="text-xs text-grafite-500">Em lavagem agora · entrega prevista {formatDay(order.due_date)}</li>
               )}
             </ol>
+            <div className="mt-4 space-y-3 border-t border-grafite/10 pt-4">
+              <TimelineToggle orderId={order.id} refreshKey={`${order.status}-${order.paid}-${stage?.dispute?.status ?? ""}-${stage?.dispute?.responded_at ?? ""}`} />
+              {stage?.can_dispute && role === "owner" && (
+                <button type="button" onClick={() => setDisputing(true)} className="block text-xs font-semibold text-grafite-500 hover:text-red-700 hover:underline" data-testid="dispute-open">
+                  Relatar um problema com este pedido
+                </button>
+              )}
+            </div>
           </Card>
         </div>
       </div>
+      {disputing && (
+        <DisputeModal
+          orderId={order.id}
+          orderNumber={order.number}
+          side="prestador"
+          onClose={() => setDisputing(false)}
+          onDone={() => {
+            setDisputing(false);
+            void load();
+          }}
+        />
+      )}
       <Modal open={!!editingItems} title={`Ajustar orçamento #${order.number}`} onClose={() => setEditingItems(null)}>
         {editingItems && (
           <div className="space-y-4">

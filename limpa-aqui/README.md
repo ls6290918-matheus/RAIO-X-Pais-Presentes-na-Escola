@@ -5,6 +5,7 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Histórico e disputas (PRD seção 8):** cada pedido guarda o histórico (criação, situações, pagamento, corridas, disputas, com quem fez). Etapas "aguardando pagamento", "concluído" (cliente confirma o recebimento, ou 7 dias após a entrega) e "em disputa" são mostradas por cima da situação gravada, sem mudar o enum. Cliente ou dono abrem disputa (até 7 dias após a entrega), a outra parte responde e o admin decide em /admin → Disputas. Com disputa aberta, os repasses do pedido ficam bloqueados (inclusive os criados depois) e não podem ser pagos; a favor do cliente, o Pix vai para devolução e os repasses são cancelados.
 - **Avaliações (PRD Fase 3):** o cliente avalia a lavanderia (pedido entregue) e os entregadores (corridas entregues) com 1 a 5 estrelas, critérios opcionais (qualidade, pontualidade, atendimento) e comentário; pode corrigir em até 7 dias. Média aparece só quando há avaliação real (busca, Início, perfil público, propostas); o perfil mostra os comentários com o primeiro nome e a resposta pública do dono (/app/avaliacoes). Nota do entregador no painel dele.
 
 - **Agenda do prestador (Etapa 6):** /app/agenda (menu "Agenda"), pedidos por dia de entrega prevista em faixa semanal, com a capacidade diária do perfil de trabalho (verde, amarelo perto do limite, vermelho acima), situação da coleta/devolução de cada pedido e pedidos atrasados de semanas anteriores. Dono e equipe veem.
@@ -370,6 +371,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    30. `20261216000030_entregador_online.sql`
    31. `20261217000031_agenda_prestador.sql`
    32. `20261218000032_avaliacoes.sql`
+   33. `20261219000033_historico_disputas.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -447,7 +449,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **168 de 168 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda e 1 das avaliações), incluindo isolamento
+Resultado da última execução: **172 de 172 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda, 1 das avaliações e 4 do histórico e das disputas), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

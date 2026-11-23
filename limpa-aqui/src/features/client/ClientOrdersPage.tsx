@@ -7,6 +7,7 @@ import { ClientShell } from "./ClientShell";
 import { OrderCard } from "./OrderTracker";
 import { isActiveOrder, type MyOrder } from "./clientTypes";
 import { ReviewModal, type ReviewStatus } from "./ReviewModal";
+import { loadStageInfo, type StageInfo } from "@/features/orders/OrderTimeline";
 
 /** /cliente/pedidos — pedidos do cliente, com as etapas de cada um. */
 export default function ClientOrdersPage() {
@@ -15,11 +16,13 @@ export default function ClientOrdersPage() {
   const [reviews, setReviews] = useState<Map<string, ReviewStatus>>(new Map());
   const [reviewing, setReviewing] = useState<MyOrder | null>(null);
   const [thanks, setThanks] = useState(false);
+  const [stages, setStages] = useState<Map<string, StageInfo>>(new Map());
 
   const load = useCallback(async () => {
     const { data } = await supabase.rpc("my_orders");
     const list = (data as MyOrder[]) ?? [];
     setOrders(list);
+    setStages(await loadStageInfo(list.filter((o) => o.status !== "orcamento").map((o) => o.id)));
     const done = list.filter((o) => o.status === "entregue").map((o) => o.id);
     if (done.length) {
       const r = await supabase.rpc("my_review_status", { p_order_ids: done });
@@ -31,13 +34,14 @@ export default function ClientOrdersPage() {
     void load();
   }, [load]);
 
-  const active = (orders ?? []).filter(isActiveOrder);
+  // em andamento também: entregue esperando a confirmação do cliente ou com disputa aberta
+  const active = (orders ?? []).filter((o) => isActiveOrder(o) || stages.get(o.id)?.can_confirm || stages.get(o.id)?.dispute?.status === "aberta");
   const shown = tab === "andamento" ? active : orders ?? [];
 
   return (
     <ClientShell>
       <div className="space-y-5">
-        <PageHeader title="Pedidos" description="Acompanhe cada etapa: recebido, lavando, pronto e entregue." />
+        <PageHeader title="Pedidos" description="Acompanhe cada etapa, confirme o recebimento e relate problemas." />
         {thanks && (
           <div onClick={() => setThanks(false)} className="rounded-xl bg-agua-50 px-4 py-3 text-sm font-medium text-petroleo" role="status">
             Obrigado pela avaliação! Ela ajuda outras pessoas a escolher.
@@ -79,7 +83,7 @@ export default function ClientOrdersPage() {
         ) : (
           <ul className="space-y-3" data-testid="order-list">
             {shown.map((o) => (
-              <OrderCard key={o.id} order={o} review={reviews.get(o.id)} onReview={() => setReviewing(o)} />
+              <OrderCard key={o.id} order={o} review={reviews.get(o.id)} onReview={() => setReviewing(o)} stage={stages.get(o.id)} onChanged={() => void load()} />
             ))}
           </ul>
         )}
