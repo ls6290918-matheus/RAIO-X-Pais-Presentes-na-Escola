@@ -21,6 +21,54 @@ type Row = {
   open_deliveries: number;
 };
 
+/** Quantas corridas um entregador pode ter ao mesmo tempo (aceitas ou coletadas). */
+function CourierLimitCard() {
+  const [value, setValue] = useState<number | null>(null);
+  const [saved, setSaved] = useState<number | null>(null);
+  const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void supabase.rpc("admin_logistics_settings").then(({ data, error }) => {
+      if (error) return setMsg({ kind: "error", text: friendlyError(error) });
+      const n = Number((data as { max_active_deliveries: number }).max_active_deliveries);
+      setValue(n);
+      setSaved(n);
+    });
+  }, []);
+  async function save() {
+    if (value === null) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_set_max_active_deliveries", { p_max: value });
+    setBusy(false);
+    if (error) return setMsg({ kind: "error", text: friendlyError(error) });
+    setSaved(value);
+    setMsg({ kind: "success", text: `Pronto: cada entregador pode ter até ${value} corrida(s) ao mesmo tempo.` });
+  }
+  return (
+    <Card className="space-y-3 p-4" data-testid="courier-limit-card">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-grafite">Corridas ao mesmo tempo por entregador</p>
+          <p className="text-xs text-grafite-500">Conta corridas aceitas e ainda não entregues. Concluir, desistir ou cancelar libera a vaga.</p>
+        </div>
+        <div className="w-28">
+          <Select value={value ?? ""} disabled={value === null} onChange={(e) => setValue(Number(e.target.value))} aria-label="Limite de corridas por entregador">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <Button className="h-11" loading={busy} disabled={value === null || value === saved} onClick={() => void save()}>
+          Salvar
+        </Button>
+      </div>
+      {msg && <Alert kind={msg.kind}>{msg.text}</Alert>}
+    </Card>
+  );
+}
+
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Administração → Logística: tarifa de entrega por município (editável) e cobertura de entregadores. */
@@ -108,6 +156,7 @@ export function AdminLogistics() {
   return (
     <div className="space-y-4">
       {msg && <Alert kind={msg.kind}>{msg.text}</Alert>}
+      <CourierLimitCard />
       <p className="text-xs text-grafite-500">
         Um município tem logística quando tem tarifa ativa e pelo menos um entregador aprovado que atende lá. Só então o cliente vê a opção
         "Entregador do Limpa Aqui", sempre com o valor antes de confirmar. Corrida = taxa base + valor por km × distância (em linha reta × fator

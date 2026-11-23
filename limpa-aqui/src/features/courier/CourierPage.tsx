@@ -67,7 +67,7 @@ export default function CourierPage() {
   const [mine, setMine] = useState<Mine[]>([]);
   const [tab, setTab] = useState<"livres" | "minhas" | "historico">("livres");
   const [rating, setRating] = useState<{ rating: number; count: number } | null>(null);
-  const [summary, setSummary] = useState<{ online: boolean; today_rides: number; today_earnings: number; week_rides: number; week_earnings: number; active: number } | null>(null);
+  const [summary, setSummary] = useState<{ online: boolean; today_rides: number; today_earnings: number; week_rides: number; week_earnings: number; active: number; max_active: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [proof, setProof] = useState<{ id: string; stage: "coleta" | "entrega"; number: number } | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
@@ -94,7 +94,7 @@ export default function CourierPage() {
       const rr = rt.data as { rating: number | null; count: number } | null;
       setRating(rr && Number(rr.count) > 0 ? { rating: Number(rr.rating), count: Number(rr.count) } : null);
       const sm = su.data as Record<string, unknown> | null;
-      setSummary(sm ? { online: Boolean(sm.online), today_rides: Number(sm.today_rides), today_earnings: Number(sm.today_earnings), week_rides: Number(sm.week_rides), week_earnings: Number(sm.week_earnings), active: Number(sm.active) } : null);
+      setSummary(sm ? { online: Boolean(sm.online), today_rides: Number(sm.today_rides), today_earnings: Number(sm.today_earnings), week_rides: Number(sm.week_rides), week_earnings: Number(sm.week_earnings), active: Number(sm.active), max_active: Number(sm.max_active ?? 1) } : null);
       setAvailable(((av.data as Available[]) ?? []).map((x) => ({ ...x, delivery_fee: Number(x.delivery_fee), distance_km: Number(x.distance_km) })));
       setMine(((my.data as Mine[]) ?? []).map((x) => ({ ...x, delivery_fee: Number(x.delivery_fee), courier_earnings: Number(x.courier_earnings) })));
     }
@@ -139,6 +139,8 @@ export default function CourierPage() {
     else setMsg({ kind: "success", text: ok });
     await load();
   }
+
+  const atLimit = !!summary && summary.active >= summary.max_active;
 
   if (profile === undefined)
     return (
@@ -291,7 +293,7 @@ export default function CourierPage() {
                 {[
                   ["Hoje", formatBRL(summary?.today_earnings ?? 0), `${summary?.today_rides ?? 0} corrida(s)`],
                   ["Semana", formatBRL(summary?.week_earnings ?? 0), `${summary?.week_rides ?? 0} corrida(s)`],
-                  ["Em andamento", String(summary?.active ?? 0), "corrida(s)"],
+                  ["Em andamento", `${summary?.active ?? 0}/${summary?.max_active ?? 1}`, "corrida(s)"],
                 ].map(([l, v, n]) => (
                   <div key={l} className="rounded-2xl bg-white/[0.06] px-2 py-3">
                     <p className="text-[11px] text-white/60">{l}</p>
@@ -333,6 +335,11 @@ export default function CourierPage() {
                 </Card>
               ) : (
                 <ul className="space-y-3" data-testid="available-list">
+                  {atLimit && (
+                    <li className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" data-testid="courier-limit">
+                      Você já tem {summary?.active} corrida(s) em andamento. Conclua {summary?.active === 1 ? "a corrida" : "uma delas"} para aceitar outra.
+                    </li>
+                  )}
                   {available.map((d) => (
                     <li key={d.id}>
                       <Card className="space-y-4 p-4">
@@ -356,8 +363,8 @@ export default function CourierPage() {
                             <p className="font-semibold text-grafite">{d.dest_neighborhood ?? "Bairro informado ao aceitar"}</p>
                           </li>
                         </ol>
-                        <Button block loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("accept_delivery", { p_delivery_id: d.id }), "Corrida aceita! Veja em Em andamento.")}>
-                          Aceitar corrida
+                        <Button block disabled={atLimit} loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("accept_delivery", { p_delivery_id: d.id }), "Corrida aceita! Veja em Em andamento.")}>
+                          {atLimit ? "Conclua a corrida em andamento" : "Aceitar corrida"}
                         </Button>
                       </Card>
                     </li>
