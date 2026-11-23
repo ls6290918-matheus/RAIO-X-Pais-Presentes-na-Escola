@@ -338,7 +338,9 @@ export default function CourierPage() {
                 <ul className="space-y-3" data-testid="available-list">
                   {atLimit && (
                     <li className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" data-testid="courier-limit">
-                      Você já tem {summary?.active} corrida(s) em andamento. Conclua {summary?.active === 1 ? "a corrida" : "uma delas"} para aceitar outra.
+                      {summary?.max_active === 1
+                        ? "Você já possui uma entrega em andamento. Conclua ou finalize essa entrega antes de aceitar outra."
+                        : `Você já possui ${summary?.active} entregas em andamento (o limite é ${summary?.max_active}). Conclua ou finalize uma delas antes de aceitar outra.`}
                     </li>
                   )}
                   {available.map((d) => (

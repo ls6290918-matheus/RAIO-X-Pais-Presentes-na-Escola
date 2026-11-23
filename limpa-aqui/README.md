@@ -383,6 +383,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    37. `20261223000037_limite_corridas.sql`
    38. `20261224000038_extensoes_notificacao.sql`
    39. `20261224000039_notificacoes.sql`
+   40. `20261225000040_mensagem_limite_corridas.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.

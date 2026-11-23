@@ -51,7 +51,7 @@ wait
 waited=$(( ($(date +%s%N) - start) / 1000000 ))
 check "$(active $E19)" 1 "só uma corrida ativa"
 check "$(ok_count "$TMP/a" "$TMP/b")" 1 "um aceite deu certo"
-grep -q "já tem 1 corrida" "$TMP/b" && echo "  ok   o segundo recebeu a mensagem do limite" || { echo "  FALHOU mensagem do limite"; cat "$TMP/b"; fail=1; }
+grep -q "Você já possui uma entrega em andamento" "$TMP/b" && echo "  ok   o segundo recebeu a mensagem do limite" || { echo "  FALHOU mensagem do limite"; cat "$TMP/b"; fail=1; }
 [ "$waited" -ge 1900 ] && echo "  ok   o segundo esperou o primeiro terminar (${waited} ms)" || { echo "  FALHOU o segundo não esperou (${waited} ms)"; fail=1; }
 
 echo "L2: o mesmo entregador dispara 10 aceites em 10 corridas ao mesmo tempo"

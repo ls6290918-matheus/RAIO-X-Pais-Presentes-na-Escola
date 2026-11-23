@@ -47,7 +47,7 @@ do $$ declare s jsonb; begin
     perform public.accept_delivery((select id from t183 where k = 'd2'));
     raise exception 'T183 FALHOU aceitou a segunda corrida';
   exception when invalid_parameter_value then
-    if sqlerrm not like 'Você já tem 1 corrida(s) em andamento%' then raise; end if;
+    if sqlerrm <> 'Você já possui uma entrega em andamento. Conclua ou finalize essa entrega antes de aceitar outra.' then raise; end if;
   end;
   s := public.courier_summary();
   assert (s ->> 'active')::int = 1 and (s ->> 'max_active')::int = 1, 'T183 resumo mostra 1 de 1';
