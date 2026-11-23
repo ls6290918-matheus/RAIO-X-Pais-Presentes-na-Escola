@@ -12,6 +12,8 @@ import { HireOptions, type CourierQuote } from "./HireOptions";
 import { loadListingExtras } from "@/lib/listingPhotos";
 import { ListingExtrasView } from "./ListingExtrasView";
 import { ChatButton } from "@/features/chat/Chat";
+import { loadRatings } from "@/lib/ratings";
+import { RatingBadge } from "@/components/shared/Stars";
 
 export type MyListing = {
   id: string;
@@ -52,6 +54,7 @@ export default function ListingPage() {
   const [listing, setListing] = useState<MyListing | null | undefined>(undefined);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [extras, setExtras] = useState<Awaited<ReturnType<typeof loadListingExtras>>>(new Map());
+  const [ratings, setRatings] = useState<Map<string, { rating: number; reviews: number }>>(new Map());
   const [choosing, setChoosing] = useState<Proposal | null>(null);
   const [logistics, setLogistics] = useState<LogisticsMode>("sem_logistica");
   const [payment, setPayment] = useState<PaymentMode>("direto");
@@ -64,8 +67,10 @@ export default function ListingPage() {
   const load = useCallback(async () => {
     const [l, p] = await Promise.all([supabase.rpc("my_listings"), supabase.rpc("listing_proposals", { p_listing_id: id })]);
     setListing(((l.data as MyListing[]) ?? []).find((x) => x.id === id) ?? null);
-    setProposals(((p.data as Proposal[]) ?? []).map((x) => ({ ...x, price: Number(x.price) })));
+    const props = ((p.data as Proposal[]) ?? []).map((x) => ({ ...x, price: Number(x.price) }));
+    setProposals(props);
     setExtras(await loadListingExtras([id]));
+    setRatings(await loadRatings(props.map((x) => x.business_slug)));
   }, [id]);
 
   useEffect(() => {
@@ -160,6 +165,7 @@ export default function ListingPage() {
                       <Link to={`/p/${p.business_slug}`} className="text-base font-semibold text-petroleo hover:underline">
                         {p.business_name}
                       </Link>
+                      <RatingBadge className="ml-2" rating={ratings.get(p.business_slug)?.rating} count={ratings.get(p.business_slug)?.reviews} />
                       <p className="text-xs text-grafite-500">
                         Prazo: {p.due_days} {p.due_days === 1 ? "dia" : "dias"}
                         {p.offers_pickup && (

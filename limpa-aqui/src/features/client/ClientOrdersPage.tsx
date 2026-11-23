@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import { Card, EmptyState, InlineLoader, PageHeader, buttonClass, cn } from "@/components/shared/ui";
@@ -6,15 +6,30 @@ import { supabase } from "@/lib/supabase";
 import { ClientShell } from "./ClientShell";
 import { OrderCard } from "./OrderTracker";
 import { isActiveOrder, type MyOrder } from "./clientTypes";
+import { ReviewModal, type ReviewStatus } from "./ReviewModal";
 
 /** /cliente/pedidos — pedidos do cliente, com as etapas de cada um. */
 export default function ClientOrdersPage() {
   const [orders, setOrders] = useState<MyOrder[] | null>(null);
   const [tab, setTab] = useState<"andamento" | "todos">("andamento");
+  const [reviews, setReviews] = useState<Map<string, ReviewStatus>>(new Map());
+  const [reviewing, setReviewing] = useState<MyOrder | null>(null);
+  const [thanks, setThanks] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.rpc("my_orders");
+    const list = (data as MyOrder[]) ?? [];
+    setOrders(list);
+    const done = list.filter((o) => o.status === "entregue").map((o) => o.id);
+    if (done.length) {
+      const r = await supabase.rpc("my_review_status", { p_order_ids: done });
+      setReviews(new Map(((r.data as ReviewStatus[]) ?? []).map((x) => [x.order_id, x])));
+    }
+  }, []);
 
   useEffect(() => {
-    void supabase.rpc("my_orders").then(({ data }) => setOrders((data as MyOrder[]) ?? []));
-  }, []);
+    void load();
+  }, [load]);
 
   const active = (orders ?? []).filter(isActiveOrder);
   const shown = tab === "andamento" ? active : orders ?? [];
@@ -23,6 +38,11 @@ export default function ClientOrdersPage() {
     <ClientShell>
       <div className="space-y-5">
         <PageHeader title="Pedidos" description="Acompanhe cada etapa: recebido, lavando, pronto e entregue." />
+        {thanks && (
+          <div onClick={() => setThanks(false)} className="rounded-xl bg-agua-50 px-4 py-3 text-sm font-medium text-petroleo" role="status">
+            Obrigado pela avaliação! Ela ajuda outras pessoas a escolher.
+          </div>
+        )}
         <div className="inline-flex rounded-xl bg-white p-1 shadow-sm" role="tablist">
           {(
             [
@@ -59,11 +79,23 @@ export default function ClientOrdersPage() {
         ) : (
           <ul className="space-y-3" data-testid="order-list">
             {shown.map((o) => (
-              <OrderCard key={o.id} order={o} />
+              <OrderCard key={o.id} order={o} review={reviews.get(o.id)} onReview={() => setReviewing(o)} />
             ))}
           </ul>
         )}
       </div>
+      {reviewing && reviews.get(reviewing.id) && (
+        <ReviewModal
+          businessName={reviewing.business_name}
+          status={reviews.get(reviewing.id)!}
+          onClose={() => setReviewing(null)}
+          onSaved={() => {
+            setReviewing(null);
+            setThanks(true);
+            void load();
+          }}
+        />
+      )}
     </ClientShell>
   );
 }

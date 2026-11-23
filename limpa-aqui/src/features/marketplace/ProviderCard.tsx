@@ -4,6 +4,7 @@ import { cn } from "@/components/shared/ui";
 import { formatBRL } from "@/lib/format";
 import { logoUrl } from "@/lib/logo";
 import { formatKm, type SearchResult } from "./types";
+import { RatingBadge } from "@/components/shared/Stars";
 
 /** Capa do prestador: o logotipo sobre um fundo da marca (ou o ícone, sem logotipo). */
 export function ProviderCover({ logo, name, className }: { logo: string | null; name: string; className?: string }) {
@@ -43,7 +44,10 @@ export function ProviderCard({ r, compact = false }: { r: SearchResult; compact?
         )}
       </div>
       <div className="flex flex-1 flex-col p-3">
-        <p className="truncate text-sm font-semibold text-grafite">{r.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-grafite">{r.name}</p>
+          <RatingBadge rating={r.rating} count={r.reviews} />
+        </div>
         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-grafite-500">
           <MapPin className="h-3 w-3 shrink-0 text-agua-600" aria-hidden />
           {r.distance_km != null ? formatKm(r.distance_km) : [r.neighborhood, r.municipality_name].filter(Boolean).join(", ")}

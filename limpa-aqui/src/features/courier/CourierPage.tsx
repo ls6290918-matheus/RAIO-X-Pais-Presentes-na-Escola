@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyError } from "@/lib/errors";
 import { formatBRL, maskPhone, onlyDigits, whatsappLink } from "@/lib/format";
 import { CourierPayouts } from "./CourierPayouts";
+import { RatingBadge } from "@/components/shared/Stars";
 
 type Vehicle = "bicicleta" | "moto" | "carro";
 type Mun = { id: number; name: string };
@@ -64,6 +65,7 @@ export default function CourierPage() {
   const [available, setAvailable] = useState<Available[]>([]);
   const [mine, setMine] = useState<Mine[]>([]);
   const [tab, setTab] = useState<"livres" | "minhas" | "historico">("livres");
+  const [rating, setRating] = useState<{ rating: number; count: number } | null>(null);
   const [summary, setSummary] = useState<{ online: boolean; today_rides: number; today_earnings: number; week_rides: number; week_earnings: number; active: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
@@ -86,7 +88,9 @@ export default function CourierPage() {
       setCpf(prof.cpf_last4);
     }
     if (status === "ativo") {
-      const [av, my, su] = await Promise.all([supabase.rpc("courier_available_deliveries"), supabase.rpc("my_deliveries"), supabase.rpc("courier_summary")]);
+      const [av, my, su, rt] = await Promise.all([supabase.rpc("courier_available_deliveries"), supabase.rpc("my_deliveries"), supabase.rpc("courier_summary"), supabase.rpc("courier_rating")]);
+      const rr = rt.data as { rating: number | null; count: number } | null;
+      setRating(rr && Number(rr.count) > 0 ? { rating: Number(rr.rating), count: Number(rr.count) } : null);
       const sm = su.data as Record<string, unknown> | null;
       setSummary(sm ? { online: Boolean(sm.online), today_rides: Number(sm.today_rides), today_earnings: Number(sm.today_earnings), week_rides: Number(sm.week_rides), week_earnings: Number(sm.week_earnings), active: Number(sm.active) } : null);
       setAvailable(((av.data as Available[]) ?? []).map((x) => ({ ...x, delivery_fee: Number(x.delivery_fee), distance_km: Number(x.distance_km) })));
@@ -265,6 +269,7 @@ export default function CourierPage() {
                 <span className={cn("h-3 w-3 shrink-0 rounded-full", summary?.online ? "bg-agua shadow-[0_0_0_4px_rgba(97,214,195,0.25)]" : "bg-white/30")} aria-hidden />
                 <div className="min-w-0 flex-1">
                   <p className="text-lg font-semibold" data-testid="courier-state">{summary?.online ? "Você está online" : "Você está offline"}</p>
+                  {rating && <RatingBadge className="text-white [&_span]:text-white/60" rating={rating.rating} count={rating.count} />}
                   <p className="text-xs text-white/60">{summary?.online ? "Recebendo corridas de " + areas.map((a) => a.name).join(", ") : "Fique online para receber corridas da sua região."}</p>
                 </div>
                 <button

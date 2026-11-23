@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PublicLayout } from "./PublicLayout";
 import { HireModal } from "./HireModal";
 import { ProviderCover } from "./ProviderCard";
+import { RatingBadge, StarsDisplay } from "@/components/shared/Stars";
 import { HOURS_LABEL, PROVIDER_TYPE_LABEL, type PublicProvider } from "./types";
 
 /** Ícone do item pelo nome da categoria/serviço. */
@@ -29,13 +30,16 @@ export default function ProviderPage() {
   const [hiring, setHiring] = useState(false);
   const [cat, setCat] = useState<string>("");
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [reviews, setReviews] = useState<Array<{ id: string; rating: number; comment: string | null; author: string; created_at: string; reply: string | null }>>([]);
   const { session } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     void supabase.rpc("get_public_provider", { p_slug: slug }).then(({ data }) => setP((data as PublicProvider | null) ?? null));
+    void supabase.rpc("public_reviews", { p_slug: slug }).then(({ data }) => setReviews((data as typeof reviews) ?? []));
   }, [slug]);
+  const avg = reviews.length ? reviews.reduce((a, r) => a + Number(r.rating), 0) / reviews.length : null;
 
   const categories = useMemo(() => [...new Set((p?.services ?? []).map((s) => s.category ?? "Outros serviços"))], [p]);
   const services = (p?.services ?? []).filter((s) => !cat || (s.category ?? "Outros serviços") === cat);
@@ -97,7 +101,10 @@ export default function ProviderPage() {
                 <p className="mt-0.5 flex items-center gap-1 text-sm text-grafite-500">
                   <MapPin className="h-4 w-4 shrink-0 text-agua-600" aria-hidden /> {place}
                 </p>
-                <p className="text-xs text-grafite-500">{p.provider_type ? PROVIDER_TYPE_LABEL[p.provider_type] : "Prestador"}</p>
+                <p className="flex flex-wrap items-center gap-2 text-xs text-grafite-500">
+                  {p.provider_type ? PROVIDER_TYPE_LABEL[p.provider_type] : "Prestador"}
+                  <RatingBadge rating={avg != null ? Math.round(avg * 10) / 10 : null} count={reviews.length} />
+                </p>
               </div>
               {p.featured && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800">
@@ -200,6 +207,27 @@ export default function ProviderPage() {
               })}
             </ul>
           </section>
+
+          {reviews.length > 0 && (
+            <section className="rounded-2xl bg-white p-5 shadow-sm" data-testid="public-reviews">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-grafite">
+                Avaliações <RatingBadge rating={avg != null ? Math.round(avg * 10) / 10 : null} count={reviews.length} />
+              </h2>
+              <ul className="mt-3 divide-y divide-grafite/5">
+                {reviews.slice(0, 6).map((r) => (
+                  <li key={r.id} className="py-3">
+                    <div className="flex items-center gap-2">
+                      <StarsDisplay value={Number(r.rating)} size={13} />
+                      <span className="text-xs font-semibold text-grafite">{r.author}</span>
+                      <span className="text-[11px] text-grafite-500">{new Date(r.created_at).toLocaleDateString("pt-BR")}</span>
+                    </div>
+                    {r.comment && <p className="mt-1 text-sm text-grafite">{r.comment}</p>}
+                    {r.reply && <p className="mt-2 rounded-xl bg-nevoa px-3 py-2 text-xs text-grafite-500"><span className="font-semibold text-petroleo">Resposta da lavanderia:</span> {r.reply}</p>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <section className="rounded-2xl bg-white p-5 shadow-sm">

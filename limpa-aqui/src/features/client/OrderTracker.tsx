@@ -6,6 +6,9 @@ import { LOGISTICS_LABEL, PAYMENT_LABEL } from "@/lib/marketplace";
 import { OrderDeliveriesCard } from "@/features/orders/OrderDeliveriesCard";
 import type { MyOrder } from "./clientTypes";
 import { ChatButton } from "@/features/chat/Chat";
+import { Star } from "lucide-react";
+import { StarsDisplay } from "@/components/shared/Stars";
+import type { ReviewStatus } from "./ReviewModal";
 
 const STEPS = [
   { key: "recebido", label: "Recebido" },
@@ -69,7 +72,7 @@ export function ActiveOrderCard({ order }: { order: MyOrder }) {
 }
 
 /** Pedido completo na lista "Pedidos". */
-export function OrderCard({ order: o }: { order: MyOrder }) {
+export function OrderCard({ order: o, review, onReview }: { order: MyOrder; review?: ReviewStatus; onReview?: () => void }) {
   const pix = awaitingPix(o);
   return (
     <li className="rounded-2xl bg-white p-4 shadow-sm sm:p-5" data-testid="order-card">
@@ -105,8 +108,18 @@ export function OrderCard({ order: o }: { order: MyOrder }) {
       </div>
 
       {o.status !== "cancelado" && (
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <ChatButton kind="pedido" args={{ orderId: o.id }} basePath="/cliente/mensagens" label="Falar com a lavanderia" />
+          {review?.can_review_provider &&
+            (review.provider_rating ? (
+              <button type="button" onClick={onReview} className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-xs text-grafite-500 hover:bg-nevoa" data-testid="review-done">
+                <StarsDisplay value={review.provider_rating} /> Sua avaliação · alterar
+              </button>
+            ) : (
+              <button type="button" onClick={onReview} className={buttonClass("primary") + " h-9"} data-testid="review-open">
+                <Star className="h-4 w-4" aria-hidden /> Avaliar pedido
+              </button>
+            ))}
         </div>
       )}
       {pix && (

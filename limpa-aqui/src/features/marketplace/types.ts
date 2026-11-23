@@ -20,6 +20,9 @@ export type SearchResult = {
   accepts_app_payment: boolean;
   distance_km: number | null;
   featured?: boolean;
+  /** média pública (só quando houver avaliações) */
+  rating?: number;
+  reviews?: number;
 };
 
 export type PublicProvider = Omit<SearchResult, "min_price" | "services_count" | "distance_km"> & {

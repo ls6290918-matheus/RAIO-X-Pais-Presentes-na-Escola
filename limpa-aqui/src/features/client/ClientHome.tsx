@@ -16,6 +16,7 @@ import { ActiveOrderCard } from "./OrderTracker";
 import { ListingModal } from "./ListingModal";
 import { AddressModal } from "./AddressModal";
 import { isActiveOrder, type MyOrder, type UserAddress } from "./clientTypes";
+import { loadRatings } from "@/lib/ratings";
 
 const addrLine = (a: UserAddress) => [a.street && `${a.street}${a.street_number ? `, ${a.street_number}` : ""}`, a.neighborhood].filter(Boolean).join(" · ") || a.label;
 
@@ -119,7 +120,9 @@ export default function ClientHome() {
         p_lat: main.lat ?? null,
         p_lng: main.lng ?? null,
       });
-      setNearby(((data as SearchResult[]) ?? []).map((r) => ({ ...r, min_price: r.min_price == null ? null : Number(r.min_price), distance_km: r.distance_km == null ? null : Number(r.distance_km) })));
+      const list = ((data as SearchResult[]) ?? []).map((r) => ({ ...r, min_price: r.min_price == null ? null : Number(r.min_price), distance_km: r.distance_km == null ? null : Number(r.distance_km) }));
+      const rt = await loadRatings(list.map((r) => r.slug));
+      setNearby(list.map((r) => ({ ...r, ...rt.get(r.slug) })));
     } else {
       setNearby([]);
     }

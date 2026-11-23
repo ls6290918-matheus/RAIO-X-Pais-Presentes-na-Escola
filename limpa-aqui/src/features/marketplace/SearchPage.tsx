@@ -8,6 +8,7 @@ import { friendlyError } from "@/lib/errors";
 import { PublicLayout } from "./PublicLayout";
 import { type SearchResult } from "./types";
 import { ProviderCard } from "./ProviderCard";
+import { loadRatings } from "@/lib/ratings";
 
 type Mun = { id: number; name: string; providers: number };
 type Cat = { code: string; name: string };
@@ -61,7 +62,9 @@ export default function SearchPage() {
       .then(({ data, error: err }) => {
         setSearching(false);
         if (err) setError(friendlyError(err));
-        setResults(((data as SearchResult[]) ?? []).map((r) => ({ ...r, min_price: r.min_price == null ? null : Number(r.min_price), distance_km: r.distance_km == null ? null : Number(r.distance_km) })));
+        const list = ((data as SearchResult[]) ?? []).map((r) => ({ ...r, min_price: r.min_price == null ? null : Number(r.min_price), distance_km: r.distance_km == null ? null : Number(r.distance_km) }));
+        setResults(list);
+        void loadRatings(list.map((r) => r.slug)).then((m) => m.size && setResults(list.map((r) => ({ ...r, ...m.get(r.slug) }))));
       });
   }, [mun, cat, point]);
 
