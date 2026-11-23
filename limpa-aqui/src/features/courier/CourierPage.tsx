@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, Clock, MapPin, MessageCircle, Navigation, Plus, Search, X } from "lucide-react";
+import { Bike, CircleDot, Clock, History, MapPin, MessageCircle, Navigation, Plus, Power, Search, Wallet, X } from "lucide-react";
 import { Alert, Button, Card, EmptyState, Field, InlineLoader, Input, PageHeader, Select, cn } from "@/components/shared/ui";
 import { SimpleLayout } from "@/components/layout/SimpleLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,7 +63,8 @@ export default function CourierPage() {
   const [q, setQ] = useState("");
   const [available, setAvailable] = useState<Available[]>([]);
   const [mine, setMine] = useState<Mine[]>([]);
-  const [tab, setTab] = useState<"livres" | "minhas">("livres");
+  const [tab, setTab] = useState<"livres" | "minhas" | "historico">("livres");
+  const [summary, setSummary] = useState<{ online: boolean; today_rides: number; today_earnings: number; week_rides: number; week_earnings: number; active: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
@@ -85,7 +86,9 @@ export default function CourierPage() {
       setCpf(prof.cpf_last4);
     }
     if (status === "ativo") {
-      const [av, my] = await Promise.all([supabase.rpc("courier_available_deliveries"), supabase.rpc("my_deliveries")]);
+      const [av, my, su] = await Promise.all([supabase.rpc("courier_available_deliveries"), supabase.rpc("my_deliveries"), supabase.rpc("courier_summary")]);
+      const sm = su.data as Record<string, unknown> | null;
+      setSummary(sm ? { online: Boolean(sm.online), today_rides: Number(sm.today_rides), today_earnings: Number(sm.today_earnings), week_rides: Number(sm.week_rides), week_earnings: Number(sm.week_earnings), active: Number(sm.active) } : null);
       setAvailable(((av.data as Available[]) ?? []).map((x) => ({ ...x, delivery_fee: Number(x.delivery_fee), distance_km: Number(x.distance_km) })));
       setMine(((my.data as Mine[]) ?? []).map((x) => ({ ...x, delivery_fee: Number(x.delivery_fee), courier_earnings: Number(x.courier_earnings) })));
     }
@@ -162,6 +165,7 @@ export default function CourierPage() {
     );
 
   const showForm = !profile || editing;
+  const shownMine = mine.filter((m) => (tab === "historico" ? m.status === "entregue" || m.status === "cancelada" : m.status === "aceita" || m.status === "coletada"));
 
   return (
     <SimpleLayout>
@@ -255,57 +259,115 @@ export default function CourierPage() {
 
         {status === "ativo" && profile && (
           <>
-            <div className="flex gap-2" role="tablist">
+            {/* Painel do entregador: online/offline e ganhos */}
+            <section className="rounded-3xl bg-petroleo p-5 text-white shadow-lg" data-testid="courier-panel">
+              <div className="flex items-center gap-3">
+                <span className={cn("h-3 w-3 shrink-0 rounded-full", summary?.online ? "bg-agua shadow-[0_0_0_4px_rgba(97,214,195,0.25)]" : "bg-white/30")} aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg font-semibold" data-testid="courier-state">{summary?.online ? "Você está online" : "Você está offline"}</p>
+                  <p className="text-xs text-white/60">{summary?.online ? "Recebendo corridas de " + areas.map((a) => a.name).join(", ") : "Fique online para receber corridas da sua região."}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy === "online"}
+                  onClick={() => void run("online", () => supabase.rpc("set_courier_online", { p_online: !summary?.online }), summary?.online ? "Você ficou offline." : "Você está online! As corridas da sua região aparecem abaixo.")}
+                  className={cn(
+                    "inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-bold transition disabled:opacity-60",
+                    summary?.online ? "bg-white/10 text-white hover:bg-white/15" : "bg-agua text-petroleo hover:bg-agua-600",
+                  )}
+                  data-testid="courier-toggle"
+                >
+                  <Power className="h-4 w-4" aria-hidden /> {summary?.online ? "Ficar offline" : "Ficar online"}
+                </button>
+              </div>
+              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                {[
+                  ["Hoje", formatBRL(summary?.today_earnings ?? 0), `${summary?.today_rides ?? 0} corrida(s)`],
+                  ["Semana", formatBRL(summary?.week_earnings ?? 0), `${summary?.week_rides ?? 0} corrida(s)`],
+                  ["Em andamento", String(summary?.active ?? 0), "corrida(s)"],
+                ].map(([l, v, n]) => (
+                  <div key={l} className="rounded-2xl bg-white/[0.06] px-2 py-3">
+                    <p className="text-[11px] text-white/60">{l}</p>
+                    <p className="mt-0.5 text-base font-bold">{v}</p>
+                    <p className="text-[10px] text-white/50">{n}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="flex gap-2 overflow-x-auto" role="tablist">
               {(
                 [
-                  ["livres", `Corridas livres (${available.length})`],
-                  ["minhas", `Minhas corridas (${mine.filter((m) => m.status === "aceita" || m.status === "coletada").length})`],
+                  ["livres", `Corridas (${available.length})`, CircleDot],
+                  ["minhas", `Em andamento (${mine.filter((m) => m.status === "aceita" || m.status === "coletada").length})`, Bike],
+                  ["historico", "Histórico", History],
                 ] as const
-              ).map(([k, label]) => (
+              ).map(([k, label, Icon]) => (
                 <button
                   key={k}
                   role="tab"
                   aria-selected={tab === k}
                   onClick={() => setTab(k)}
-                  className={cn("rounded-xl px-4 py-2 text-sm font-semibold", tab === k ? "bg-petroleo text-white" : "bg-white text-grafite")}
+                  className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold", tab === k ? "bg-petroleo text-white" : "bg-white text-grafite")}
                 >
-                  {label}
+                  <Icon className="h-4 w-4" aria-hidden /> {label}
                 </button>
               ))}
             </div>
 
             {tab === "livres" ? (
-              available.length === 0 ? (
+              !summary?.online ? (
                 <Card>
-                  <EmptyState icon={<Clock className="h-6 w-6" />} title="Nenhuma corrida livre agora" description="Quando um cliente da sua região pedir coleta, ela aparece aqui." />
+                  <EmptyState icon={<Power className="h-6 w-6" />} title="Você está offline" description="Toque em Ficar online para ver e aceitar as coletas e devoluções da sua região." />
+                </Card>
+              ) : available.length === 0 ? (
+                <Card>
+                  <EmptyState icon={<Clock className="h-6 w-6" />} title="Nenhuma corrida livre agora" description="Fique por perto: quando um cliente da sua região pedir coleta ou devolução, ela aparece aqui." />
                 </Card>
               ) : (
                 <ul className="space-y-3" data-testid="available-list">
                   {available.map((d) => (
                     <li key={d.id}>
-                      <Card className="flex flex-wrap items-center gap-3 p-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-petroleo">{LEG_LABEL[d.leg]}</p>
-                          <p className="text-xs text-grafite-500">
-                            {d.municipality_name} · {d.origin_neighborhood ?? "—"} → {d.dest_neighborhood ?? "—"} · ~{String(d.distance_km).replace(".", ",")} km
-                          </p>
+                      <Card className="space-y-4 p-4">
+                        <div className="flex items-start gap-3">
+                          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold", d.leg === "pickup" ? "bg-agua-50 text-petroleo" : "bg-amber-50 text-amber-800")}>
+                            {d.leg === "pickup" ? "Coleta" : "Devolução"}
+                          </span>
+                          <span className="flex-1 text-xs text-grafite-500">{d.municipality_name} · ~{String(d.distance_km).replace(".", ",")} km</span>
+                          <span className="text-xl font-bold text-petroleo">{formatBRL(d.delivery_fee)}</span>
                         </div>
-                        <span className="text-base font-semibold text-petroleo">{formatBRL(d.delivery_fee)}</span>
-                        <Button className="h-9" loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("accept_delivery", { p_delivery_id: d.id }), "Corrida aceita! Veja em Minhas corridas.")}>
-                          Aceitar
+                        <ol className="relative space-y-3 pl-6 text-sm">
+                          <span className="absolute bottom-2 left-[7px] top-2 w-px bg-grafite/15" aria-hidden />
+                          <li className="relative">
+                            <span className="absolute -left-6 top-1 h-3.5 w-3.5 rounded-full border-2 border-agua-600 bg-white" aria-hidden />
+                            <p className="text-[11px] text-grafite-500">Buscar em</p>
+                            <p className="font-semibold text-grafite">{d.origin_neighborhood ?? "Bairro informado ao aceitar"}</p>
+                          </li>
+                          <li className="relative">
+                            <span className="absolute -left-6 top-1 h-3.5 w-3.5 rounded-full bg-petroleo" aria-hidden />
+                            <p className="text-[11px] text-grafite-500">Entregar em</p>
+                            <p className="font-semibold text-grafite">{d.dest_neighborhood ?? "Bairro informado ao aceitar"}</p>
+                          </li>
+                        </ol>
+                        <Button block loading={busy === d.id} onClick={() => void run(d.id, () => supabase.rpc("accept_delivery", { p_delivery_id: d.id }), "Corrida aceita! Veja em Em andamento.")}>
+                          Aceitar corrida
                         </Button>
                       </Card>
                     </li>
                   ))}
                 </ul>
               )
-            ) : mine.length === 0 ? (
+            ) : shownMine.length === 0 ? (
               <Card>
-                <EmptyState icon={<Bike className="h-6 w-6" />} title="Nenhuma corrida ainda" description="Aceite uma corrida livre para começar." />
+                <EmptyState
+                  icon={tab === "minhas" ? <Bike className="h-6 w-6" /> : <Wallet className="h-6 w-6" />}
+                  title={tab === "minhas" ? "Nenhuma corrida em andamento" : "Nenhuma corrida concluída ainda"}
+                  description={tab === "minhas" ? "Aceite uma corrida para começar." : "As corridas entregues e canceladas aparecem aqui."}
+                />
               </Card>
             ) : (
               <ul className="space-y-3" data-testid="my-list">
-                {mine.map((d) => {
+                {shownMine.map((d) => {
                   const going = d.status === "aceita" ? { lat: d.origin_lat, lng: d.origin_lng, address: d.origin_address } : { lat: d.dest_lat, lng: d.dest_lng, address: d.dest_address };
                   return (
                     <li key={d.id}>

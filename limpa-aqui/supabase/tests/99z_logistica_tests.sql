@@ -95,6 +95,13 @@ begin
   assert (select count(*) from public.order_deliveries(o) where leg = 'pickup' and status = 'disponivel') = 1, 'T126 coleta';
   assert (select count(*) from public.order_deliveries(o)) = 1, 'T126 só coleta';
 end $$;
+-- entregadores ficam online para ver e aceitar corridas (Etapa 6)
+select set_config('request.jwt.claim.sub', '20202020-0000-0000-0000-000000000020', false);
+do $$ begin perform public.set_courier_online(true); end $$;
+select set_config('request.jwt.claim.sub', '19191919-0000-0000-0000-000000000019', false);
+do $$ begin perform public.set_courier_online(true); end $$;
+select set_config('request.jwt.claim.sub', '21212121-0000-0000-0000-000000000021', false);
+do $$ begin perform public.set_courier_online(true); end $$;
 select set_config('request.jwt.claim.sub', '19191919-0000-0000-0000-000000000019', false);
 do $$
 declare r record;
