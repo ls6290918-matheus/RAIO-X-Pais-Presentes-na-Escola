@@ -10,6 +10,7 @@ import { formatBRL, maskPhone, onlyDigits, whatsappLink } from "@/lib/format";
 import { CourierPayouts } from "./CourierPayouts";
 import { RatingBadge } from "@/components/shared/Stars";
 import { ProofModal } from "./DeliveryProofs";
+import { NotificationSettings } from "@/features/settings/NotificationSettings";
 
 type Vehicle = "bicicleta" | "moto" | "carro";
 type Mun = { id: number; name: string };
@@ -442,6 +443,7 @@ export default function CourierPage() {
             )}
           </>
         )}
+        {profile && !editing && <NotificationSettings only={["logistica", "pagamentos", "marketing"]} />}
         {profile && !editing && <CourierPayouts />}
         {proof && (
           <ProofModal

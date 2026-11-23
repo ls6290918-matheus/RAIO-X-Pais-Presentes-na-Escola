@@ -36,6 +36,7 @@ import ClientPage from "@/features/client/ClientPage";
 import SearchPage from "@/features/marketplace/SearchPage";
 import { PrivacyPage, TermsPage } from "@/features/legal/LegalPages";
 import { TermsGate } from "@/features/legal/TermsGate";
+import { PushBootstrap } from "@/features/settings/PushBootstrap";
 import ProviderPage from "@/features/marketplace/ProviderPage";
 import OpportunitiesPage from "@/features/marketplace/OpportunitiesPage";
 import ListingPage from "@/features/client/ListingPage";
@@ -60,6 +61,7 @@ export default function App() {
         <BusinessProvider>
           <RolesProvider>
             <TermsGate />
+            <PushBootstrap />
             <Routes>
               <Route path="/termos" element={<TermsPage />} />
               <Route path="/privacidade" element={<PrivacyPage />} />

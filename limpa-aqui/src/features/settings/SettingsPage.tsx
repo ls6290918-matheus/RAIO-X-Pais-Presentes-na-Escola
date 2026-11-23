@@ -10,6 +10,7 @@ import { fieldErrors } from "@/features/auth/schemas";
 import { CategoriesFeaturesCard } from "./CategoriesFeaturesCard";
 import { MarketplaceCard } from "./MarketplaceCard";
 import { WorkProfileCard } from "./WorkProfileCard";
+import { NotificationSettings } from "./NotificationSettings";
 import { HoursEditor, LogoPicker } from "@/features/onboarding/IdentityStep";
 import type { OpeningHours } from "@/features/onboarding/catalog";
 
@@ -208,6 +209,8 @@ export default function SettingsPage() {
       <WorkProfileCard />
 
       <CategoriesFeaturesCard />
+
+      <NotificationSettings />
     </div>
   );
 }

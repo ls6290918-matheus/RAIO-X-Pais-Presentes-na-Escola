@@ -5,6 +5,7 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Notificações push (Fase 1):** aparelhos (`push_subscriptions`, token nunca exposto), preferências por categoria e canal, registro de envios e fila sobre os avisos do sino. Cada aviso novo vira um envio pendente (se a pessoa quiser e tiver aparelho) e o banco chama a Edge Function `notify-send` (FCM HTTP v1) pelo `pg_net`; reenvio a cada minuto e limpeza diária pelo `pg_cron`. Camada `src/lib/platform` pronta para o app Capacitor. Configuração externa: `docs/configuracao-notificacoes.md`; arquitetura móvel: `docs/arquitetura-mobile.md`. Testes da função: `deno test --allow-env supabase/functions/notify-send/`.
 - **Limite de corridas por entregador (Fase 1):** cada entregador pode ter até N corridas ativas (aceita ou coletada); N começa em 1 e o admin ajusta de 1 a 5 em Logística. `accept_delivery` trava a linha do entregador, então aceites simultâneos dele entram em fila. Concluir, desistir ou cancelar libera a vaga. Concorrência real: `supabase/tests/concorrencia/limite_corridas.sh` (só em banco de teste).
 - **Pedidos sem duplicidade (Fase 1):** `hire_services` e `create_order` aceitam `p_request_id` (opcional). A mesma tentativa devolve o pedido original (clique duplo, nova tentativa após queda de rede, duas abas); uma trava por usuário + chave serializa requisições simultâneas e o índice único `(created_by, client_request_id)` é a última defesa. Chamadas sem chave funcionam como antes. Concorrência real: `supabase/tests/concorrencia/idempotencia.sh` (só em banco de teste).
 - **Admin: listas, cupons e auditoria:** abas Usuários (busca por nome, e-mail ou WhatsApp; suspender/reativar perfis), Pedidos (busca, filtros, histórico e corridas), Anúncios (encerrar com motivo, que vai ao cliente) e Auditoria (toda alteração de admin com antes → depois, sem poder apagar). Cupons pagos pela plataforma só em pedidos pelo app: o cliente paga menos no Pix e o repasse da lavanderia não muda; validade, pedido mínimo, teto, usos totais e por pessoa, só 1º pedido; aplicado antes de gerar o Pix.
@@ -380,6 +381,8 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    35. `20261221000035_admin_cupons_auditoria.sql`
    36. `20261222000036_idempotencia_pedidos.sql`
    37. `20261223000037_limite_corridas.sql`
+   38. `20261224000038_extensoes_notificacao.sql`
+   39. `20261224000039_notificacoes.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -457,7 +460,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **185 de 185 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda, 1 das avaliações e 4 do histórico e das disputas 3 dos comprovantes de corrida 4 do admin, cupons e auditoria 3 da idempotência dos pedidos e 3 do limite de corridas), incluindo isolamento
+Resultado da última execução: **189 de 189 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online , 1 da agenda, 1 das avaliações e 4 do histórico e das disputas 3 dos comprovantes de corrida 4 do admin, cupons e auditoria 3 da idempotência dos pedidos 3 do limite de corridas e 4 das notificações), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 

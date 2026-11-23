@@ -8,6 +8,7 @@ import { friendlyError } from "@/lib/errors";
 import { maskPhone, onlyDigits } from "@/lib/format";
 import { ADDRESS_COLUMNS, formatAddress } from "@/lib/maps";
 import { ClientShell } from "./ClientShell";
+import { NotificationSettings } from "@/features/settings/NotificationSettings";
 import { AddressModal } from "./AddressModal";
 import type { UserAddress } from "./clientTypes";
 import { ListingModal } from "./ListingModal";
@@ -230,6 +231,7 @@ export default function ClientPage() {
           )}
         </Card>
 
+        <NotificationSettings />
       </div>
 
       {newListing && (

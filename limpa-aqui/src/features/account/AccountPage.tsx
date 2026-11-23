@@ -6,6 +6,7 @@ import { SimpleLayout } from "@/components/layout/SimpleLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { ROLE_LABEL, useRoles, type RoleStatus, type UserRole } from "@/contexts/RolesContext";
+import { NotificationSettings } from "@/features/settings/NotificationSettings";
 
 const ICON: Record<UserRole, ReactNode> = {
   anunciante: <Search className="h-5 w-5" />,
@@ -167,6 +168,7 @@ export default function AccountPage() {
           </Card>
           </div>
         )}
+        {roles.length > 0 && <NotificationSettings />}
       </div>
     </SimpleLayout>
   );
