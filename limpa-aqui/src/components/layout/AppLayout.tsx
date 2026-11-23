@@ -19,6 +19,7 @@ import {
   Plus,
   MoreHorizontal,
   MessageCircle,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import { Badge, Logo, cn } from "@/components/shared/ui";
@@ -42,6 +43,7 @@ function useNav(): NavItem[] {
   const items: NavItem[] = [
     { to: "/app", label: "Dashboard", icon: LayoutDashboard },
     { to: "/app/mensagens", label: "Mensagens", icon: MessageCircle },
+    { to: "/app/agenda", label: "Agenda", icon: CalendarDays },
   ];
   // Anúncios de clientes da região (marketplace) — quem propõe é o dono
   if (role === "owner") items.push({ to: "/app/oportunidades", label: "Oportunidades", icon: Inbox });

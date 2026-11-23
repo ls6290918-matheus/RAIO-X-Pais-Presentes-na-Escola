@@ -46,6 +46,7 @@ import PlanPage from "@/features/plan/PlanPage";
 import CourierPage from "@/features/courier/CourierPage";
 import LandingPage from "@/features/landing/LandingPage";
 import { ClientMessagesPage, ProviderMessagesPage } from "@/features/chat/ChatPages";
+import AgendaPage from "@/features/agenda/AgendaPage";
 import NotFound from "@/pages/NotFound";
 import SetupRequired from "@/pages/SetupRequired";
 
@@ -164,6 +165,7 @@ export default function App() {
                 <Route path="oportunidades" element={<RequireOwner><OpportunitiesPage /></RequireOwner>} />
                 <Route path="mensagens" element={<ProviderMessagesPage />} />
                 <Route path="mensagens/:id" element={<ProviderMessagesPage />} />
+                <Route path="agenda" element={<AgendaPage />} />
                 <Route
                   path="pedidos"
                   element={

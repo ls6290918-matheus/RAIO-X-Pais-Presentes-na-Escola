@@ -5,6 +5,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS + Supabase (Auth, PostgreSQL, RL
 
 ## O que já está pronto
 
+- **Agenda do prestador (Etapa 6):** /app/agenda (menu "Agenda"), pedidos por dia de entrega prevista em faixa semanal, com a capacidade diária do perfil de trabalho (verde, amarelo perto do limite, vermelho acima), situação da coleta/devolução de cada pedido e pedidos atrasados de semanas anteriores. Dono e equipe veem.
+
 - **Entregador online/offline (Etapa 6):** em /entregas, painel com o botão Ficar online/offline e os ganhos de hoje e da semana; só quem está online vê e aceita corridas livres (corridas já aceitas seguem visíveis). Cartões de corrida com Coleta/Devolução, rota de bairro a bairro, distância e valor; abas Corridas, Em andamento e Histórico.
 
 - **Chat (PRD Fase 2):** conversas em tempo real entre cliente e prestador, por anúncio (o prestador pergunta em Oportunidades; o cliente fala com quem mandou proposta) ou por pedido do marketplace. Texto e foto (bucket privado `chat-images`), não lidas na aba Mensagens (cliente e prestador), aviso no sino (um por conversa), bloquear (só quem bloqueou desbloqueia) e denunciar; o admin lê só conversas denunciadas (Administração → Denúncias). Mensagens só entram por RPC; a tabela `messages` está na publicação do Supabase Realtime e respeita a RLS.
@@ -364,6 +366,7 @@ O plano completo está em etapas: 1) perfis, admin e municípios; 2) anunciante;
    28. `20261214000028_chat.sql`
    29. `20261215000029_chat_orfaos.sql`
    30. `20261216000030_entregador_online.sql`
+   31. `20261217000031_agenda_prestador.sql`
 
    Se você já tinha rodado a Etapa 1, rode só o segundo.
 3. Confira: `select * from public.tables_without_rls();` deve retornar vazio.
@@ -441,7 +444,7 @@ Com um PostgreSQL 14+ local:
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run_local.sh
 ```
 
-Resultado da última execução: **166 de 166 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat e 1 do entregador online), incluindo isolamento
+Resultado da última execução: **167 de 167 testes passaram** (15 da Etapa 1, 15 da Etapa 2, 7 de endereços, 47 do onboarding dinâmico, 68 do marketplace, 1 do aceite dos termos, 2 dos avisos, 1 do painel do prestador, 1 dos gráficos do admin , 3 da fundação do PRD Mestre , 2 da nova home , 3 do chat , 1 do entregador online e 1 da agenda), incluindo isolamento
 entre duas lavanderias (usuário B não lê, não altera, não apaga e não usa clientes, serviços ou pedidos do usuário A,
 nem forjando o id), numeração sequencial, transições de status e permissões de funcionário.
 
